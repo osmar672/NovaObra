@@ -24,6 +24,10 @@ Para preparar el proyecto sin iniciar servidores: `npm run setup`. Para cambiar 
 
 Interfaz: `http://127.0.0.1:5173`. API: `http://127.0.0.1:3001/api`. No se requiere login. El instalador no elimina bases existentes ni repite la semilla sobre datos guardados; no migra estructuras de versiones antiguas.
 
+## Configurar o corregir el acceso a MySQL
+
+Si aparece `ER_ACCESS_DENIED_ERROR`, abrir **CONFIGURAR_MYSQL.bat** en Windows o ejecutar `npm run configurar:mysql` desde la raíz. El asistente pide la cuenta administradora local y configura una cuenta limitada para la aplicación sin guardar la contraseña de root. Ver [configuración de MySQL](docs/configurar-mysql.md).
+
 ## Verificaciones
 
 ```sh

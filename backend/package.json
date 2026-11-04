@@ -12,7 +12,9 @@
     "db:backup": "node scripts/backup.js",
     "db:restore": "node scripts/restore.js",
     "test:backup": "node --test tests/backup.integration.js",
-    "test:migrations": "node --test tests/migrations.js"
+    "test:migrations": "node --test tests/migrations.js",
+    "db:configure": "node scripts/configure-mysql.js",
+    "test:configure": "node --test tests/configure-mysql.integration.js"
   },
   "dependencies": {
     "express": "^5.1.0",

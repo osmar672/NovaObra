@@ -3,11 +3,14 @@
   "version": "1.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.12.0" },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "start": "node iniciar.mjs",
     "setup": "node iniciar.mjs --setup",
     "test": "npm --prefix backend test",
-    "build": "npm --prefix frontend run build"
+    "build": "npm --prefix frontend run build",
+    "configurar:mysql": "node configurar-mysql.mjs"
   }
 }

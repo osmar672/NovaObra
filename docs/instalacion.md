@@ -20,6 +20,10 @@ Al ver `NovaObra lista en http://127.0.0.1:5173`, abrir esa dirección si el nav
 
 Para instalar y preparar sin iniciar los servidores: `npm run setup`. La primera instalación necesita Internet; las siguientes reutilizan las dependencias instaladas.
 
+## Asistente para acceso denegado
+
+Si el usuario de aplicación no existe o la contraseña guardada no corresponde, ejecutar `CONFIGURAR_MYSQL.bat` o `npm run configurar:mysql` desde la raíz. Usar una cuenta administradora válida de MySQL en la ventana local, normalmente root. El asistente verifica y guarda la conexión sin pedir que se escriba SQL manualmente. Ver [pasos del asistente](configurar-mysql.md).
+
 ## Permisos de MySQL
 
 El usuario indicado debe existir y tener permisos sobre `NovaObra`. Si ya puedes acceder con ese usuario y crear sus tablas, no necesitas crear otra cuenta.
