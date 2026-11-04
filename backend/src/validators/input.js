@@ -31,7 +31,7 @@ export function money(v) {
       Number.isFinite(v) &&
       v >= 0 &&
       v <= 9999999999.99 &&
-      Math.abs(v * 100 - Math.round(v * 100)) < 0.001,
+      /^\d+(?:\.\d{1,2})?$/.test(String(v)),
     "Precio inválido: use hasta dos decimales.",
   );
   return v;

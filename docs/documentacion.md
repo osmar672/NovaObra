@@ -53,6 +53,7 @@ Se conservan total, subtotal y stock como valores derivados controlados: subtota
 ## Reglas transaccionales
 
 - Crear o editar un borrador guarda cabecera y detalles en una sola transacción.
+- Consultar una compra o venta recupera cabecera y líneas con una sola consulta SQL, de modo que los totales y detalles pertenecen a la misma instantánea aunque otro cliente esté editando el borrador.
 - Editar detalles individuales bloquea primero su cabecera; las operaciones confirmadas o canceladas no admiten cambios.
 - Confirmar bloquea la cabecera y los productos en orden ascendente, verifica stock y aplica entradas/salidas con sus movimientos antes de COMMIT.
 - Cancelar un borrador solo cambia el estado. Cancelar una operación confirmada registra movimientos inversos; no borra movimientos históricos.
@@ -67,7 +68,7 @@ La moneda de presentación es el colón costarricense (CRC), con dos decimales y
 
 ## Arquitectura
 
-Navegador → React/Fetch → Express REST → mysql2/promise → MySQL 8. Los módulos de backend separan configuración, modelos de campos, controladores CRUD, rutas, validadores, servicios comerciales y manejo central de errores. El servidor verifica MySQL antes de aceptar solicitudes. La interfaz consulta datos reales, sin sustitutos simulados.
+Navegador → React/Fetch → Express REST → mysql2/promise → MySQL 8. Los módulos de backend separan configuración, modelos de campos, controladores CRUD, rutas, validadores, servicios comerciales y manejo central de errores. El servidor verifica MySQL antes de aceptar solicitudes. La interfaz consulta datos reales, sin sustitutos simulados. Al navegar cancela las lecturas pendientes y comprueba la versión de la pantalla antes de aplicar sus resultados, mensajes o formularios. Las escrituras que el servidor pudo haber recibido no se cancelan: su resultado solo actualiza la vista que las inició si sigue activa.
 
 ## Fases implementadas
 

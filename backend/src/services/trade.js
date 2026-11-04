@@ -1,4 +1,4 @@
-import { transaction } from "../config/db.js";
+import { pool, transaction } from "../config/db.js";
 import { HttpError } from "../middlewares/errors.js";
 import { id, quantity, money, check, text } from "../validators/input.js";
 export const tradeInfo = (k) => ({
@@ -6,6 +6,40 @@ export const tradeInfo = (k) => ({
   party: k === "compras" ? "id_proveedor" : "id_cliente",
   price: k === "compras" ? "costo_unitario" : "precio_unitario",
 });
+// A single statement reads the header and its lines from the same InnoDB snapshot.
+export async function readTrade(k, n) {
+  const { pk, price } = tradeInfo(k);
+  const detailPk = k === "compras" ? "id_detalle_compra" : "id_detalle_venta";
+  const [rows] = await pool.query(
+    `SELECT h.*, d.${detailPk} AS line_id, d.id_producto AS line_product,
+            d.cantidad AS line_quantity, d.${price} AS line_price,
+            d.subtotal AS line_subtotal
+       FROM ${k} h
+       LEFT JOIN detalle_${k} d ON d.${pk}=h.${pk}
+      WHERE h.${pk}=? ORDER BY d.id_producto`,
+    [n],
+  );
+  if (!rows.length) throw new HttpError(404, "Operación inexistente.");
+  const {
+    line_id,
+    line_product,
+    line_quantity,
+    line_price,
+    line_subtotal,
+    ...header
+  } = rows[0];
+  const detalles = rows
+    .filter((row) => row.line_id !== null)
+    .map((row) => ({
+      [detailPk]: row.line_id,
+      [pk]: row[pk],
+      id_producto: row.line_product,
+      cantidad: row.line_quantity,
+      [price]: row.line_price,
+      subtotal: row.line_subtotal,
+    }));
+  return { ...header, detalles };
+}
 export async function locked(c, k, n) {
   const { pk } = tradeInfo(k);
   const [rows] = await c.query(`SELECT * FROM ${k} WHERE ${pk}=? FOR UPDATE`, [

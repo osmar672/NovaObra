@@ -14,7 +14,7 @@ Para cada uno de `categorias`, `proveedores`, `productos`, `clientes`, `empleado
 | PUT    | /recurso/:id | Sustituir campos editables |
 | DELETE | /recurso/:id | Eliminar cuando sea válido |
 
-En movimientos, PUT y DELETE de un registro existente responden 409: es un historial inmutable. En compras y ventas solo se editan/eliminan borradores. Los detalles se gestionan dentro del formulario de la operación o mediante sus endpoints individuales, siempre mientras la cabecera sea borrador. Los IDs de cabecera de una línea no son editables. Un borrado inválido no es una funcionalidad faltante: protege el historial.
+En movimientos, PUT y DELETE de un registro existente responden 409: es un historial inmutable. En compras y ventas solo se editan/eliminan borradores. Los detalles se gestionan dentro del formulario de la operación o mediante sus endpoints individuales, siempre mientras la cabecera sea borrador. GET de una compra o venta devuelve cabecera y detalles de una sola consulta coherente, incluso durante ediciones concurrentes. Los IDs de cabecera de una línea no son editables. Un borrado inválido no es una funcionalidad faltante: protege el historial.
 
 | Método | Ruta                   | Uso                                 |
 | ------ | ---------------------- | ----------------------------------- |
@@ -77,3 +77,7 @@ POST `/movimientos_inventario`:
 Cantidades enteras positivas para líneas y movimientos, umbral entero no negativo. Importes como números JSON con hasta dos decimales, máximo 9999999999.99 por unidad; cantidad máxima 1000000. El almacenamiento DECIMAL limita el total comercial a 999999999999.99. No se permiten campos arbitrarios, fechas inválidas ni claves foráneas inexistentes.
 
 Las listas cargan el conjunto completo y la búsqueda se realiza en el navegador; son adecuadas para el alcance académico. No incluyen paginación para volúmenes empresariales grandes.
+
+## Colecciones Postman
+
+`postman/NovaObra.postman_collection.json` permite explorar los endpoints manualmente. `postman/NovaObra.verificacion.postman_collection.json` ejecuta un recorrido automatizado con comprobaciones explícitas y crea sus propias relaciones. Usar esta última sobre una base de desarrollo desechable: sus operaciones comerciales conservan historial. El comando con Newman está documentado en `docs/pruebas.md`.

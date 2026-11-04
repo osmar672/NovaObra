@@ -14,9 +14,20 @@ test("identificadores y cantidades rechazan negativos, fracciones y desbordamien
   assert.throws(() => quantity(0, true));
 });
 test("importes válidos y rechazo de decimales ambiguos", () => {
-  for (const v of [-1, NaN, Infinity, "2", 2.001])
+  for (const v of [
+    -1,
+    NaN,
+    Infinity,
+    "2",
+    2.001,
+    12.340001,
+    0.000001,
+    1.0000000000000002,
+    9999999999.991,
+  ])
     assert.throws(() => money(v));
-  assert.equal(money(12.34), 12.34);
+  for (const value of [0, 0.01, 0.29, 1.1, 12.34, 100, 9999999999.99])
+    assert.equal(money(value), value);
 });
 test("registros rechazan campos extra, vacíos, correos y fechas inválidas", () => {
   const fields = {

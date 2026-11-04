@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 const labels = {
@@ -14,9 +14,10 @@ const labels = {
 };
 const title = (s) =>
   s.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase());
-async function request(path, method = "GET", body) {
+async function request(path, method = "GET", body, signal) {
   const r = await fetch("/api/" + path, {
     method,
+    signal,
     headers: { "Content-Type": "application/json" },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
@@ -30,6 +31,13 @@ const money = (n) =>
     n,
   );
 function App() {
+  // Invalidate old reads immediately on navigation, including a return to the same page.
+  const activePage = useRef("dashboard");
+  const viewVersion = useRef(0);
+  const loadVersion = useRef(0);
+  const editVersion = useRef(0);
+  const loadController = useRef(null);
+  const editController = useRef(null);
   const [page, setPage] = useState("dashboard"),
     [meta, setMeta] = useState({}),
     [data, setData] = useState([]),
@@ -68,23 +76,36 @@ function App() {
           descripcion: "text",
         });
   const load = useCallback(async () => {
+    if (activePage.current !== page) return;
+    const view = viewVersion.current;
+    const version = ++loadVersion.current;
+    loadController.current?.abort();
+    const controller = new AbortController();
+    loadController.current = controller;
+    const current = () =>
+      activePage.current === page &&
+      viewVersion.current === view &&
+      loadVersion.current === version &&
+      !controller.signal.aborted;
+    const get = (path) => request(path, "GET", undefined, controller.signal);
     setLoading(true);
     setError("");
     try {
-      const [metadata, current, ...lists] = await Promise.all([
-        request("metadata"),
-        request(page === "dashboard" ? "dashboard" : page),
+      const [metadata, result, ...lists] = await Promise.all([
+        get("metadata"),
+        get(page === "dashboard" ? "dashboard" : page),
         ...[
           "productos",
           "categorias",
           "proveedores",
           "clientes",
           "empleados",
-        ].map((x) => request(x)),
+        ].map(get),
       ]);
+      if (!current()) return;
       setMeta(metadata);
-      if (page === "dashboard") setDashboard(current);
-      else setData(current);
+      if (page === "dashboard") setDashboard(result);
+      else setData(result);
       setLookups(
         Object.fromEntries(
           [
@@ -93,25 +114,42 @@ function App() {
             "proveedores",
             "clientes",
             "empleados",
-          ].map((x, i) => [x, lists[i]]),
+          ].map((name, i) => [name, lists[i]]),
         ),
       );
     } catch (e) {
-      setError(e.message);
+      if (current() && e.name !== "AbortError") setError(e.message);
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
+      if (loadController.current === controller) loadController.current = null;
     }
   }, [page]);
   useEffect(() => {
     load();
+    return () => {
+      loadController.current?.abort();
+      editController.current?.abort();
+    };
   }, [load]);
   function navigate(p) {
+    if (p === activePage.current) return;
+    activePage.current = p;
+    viewVersion.current++;
+    loadVersion.current++;
+    editVersion.current++;
+    loadController.current?.abort();
+    editController.current?.abort();
     setPage(p);
+    setData([]);
+    setDashboard(null);
+    setLoading(true);
+    setBusy(false);
     setForm(null);
     setEditing(null);
     setSearch("");
     setFilter("todos");
     setNotice("");
+    setError("");
   }
   function fresh() {
     setRequestKey(crypto.randomUUID());
@@ -136,9 +174,27 @@ function App() {
     setError("");
   }
   async function edit(row) {
+    const view = viewVersion.current;
+    const version = ++editVersion.current;
+    editController.current?.abort();
+    const controller = new AbortController();
+    editController.current = controller;
+    const current = () =>
+      activePage.current === page &&
+      viewVersion.current === view &&
+      editVersion.current === version &&
+      !controller.signal.aborted;
     setBusy(true);
     try {
-      const full = trade ? await request(`${page}/${row[pk]}`) : row;
+      const full = trade
+        ? await request(
+            `${page}/${row[pk]}`,
+            "GET",
+            undefined,
+            controller.signal,
+          )
+        : row;
+      if (!current()) return;
       setEditing(row[pk]);
       setForm(
         Object.fromEntries(Object.keys(fields).map((k) => [k, full[k] ?? ""])),
@@ -153,25 +209,31 @@ function App() {
       );
       setError("");
     } catch (e) {
-      setError(e.message);
+      if (current() && e.name !== "AbortError") setError(e.message);
     } finally {
-      setBusy(false);
+      if (current()) setBusy(false);
+      if (editController.current === controller) editController.current = null;
     }
   }
   async function perform(fn, message) {
+    const view = viewVersion.current;
+    const current = () =>
+      activePage.current === page && viewVersion.current === view;
     setBusy(true);
     setError("");
     setNotice("");
     try {
+      // Writes may already have committed on the server, so only reads are aborted.
       await fn();
+      if (!current()) return false;
       setNotice(message);
       await load();
-      return true;
+      return current();
     } catch (e) {
-      setError(e.message);
+      if (current()) setError(e.message);
       return false;
     } finally {
-      setBusy(false);
+      if (current()) setBusy(false);
     }
   }
   async function save(e) {

@@ -46,13 +46,22 @@ cd frontend
 npm run build
 ```
 
+Con Express, MySQL y Vite iniciados, ejecutar desde `frontend/`:
+
+```sh
+npx playwright-core install chromium
+npm run test:ui
+```
+
+Las pruebas de navegador y la colección automatizada Postman usan una base de desarrollo desechable; sus flujos comerciales conservan el historial. Ver los comandos y resultados en [pruebas](docs/pruebas.md).
+
 ## Contenido
 
 - `backend/`: configuración, validación, rutas REST, servicios transaccionales y pruebas.
 - `frontend/`: dashboard, CRUD y compras/ventas con detalles y transiciones de estado.
 - `database/`: esquema de exactamente diez tablas y datos iniciales.
 - `docs/`: análisis, relaciones, diagrama Mermaid, instalación, API, manual y pruebas.
-- `postman/`: colección importable con solicitudes para todas las entidades.
+- `postman/`: colección manual y colección automatizada de verificación para las diez entidades.
 - `scripts/package.py`: genera el ZIP excluyendo credenciales, dependencias y temporales.
 
 ## Reglas esenciales

@@ -97,6 +97,65 @@ test("API completa e inventario contra MySQL real", async (t) => {
       { ...body, codigo: "TEST-2" },
       201,
     );
+    await t.test(
+      "API rechaza precios con precisión extra sin guardar ni alterar registros",
+      async () => {
+        const before = (await call("productos")).length;
+        for (const value of [12.340001, 0.000001, 1.0000000000000002]) {
+          await call(
+            "productos",
+            "POST",
+            { ...body, codigo: "PRECISION", precio_compra: value },
+            400,
+          );
+          await call(
+            "productos/" + p.id_producto,
+            "PUT",
+            { ...body, precio_venta: value },
+            400,
+          );
+          await call(
+            "compras",
+            "POST",
+            {
+              id_proveedor: provider.id_proveedor,
+              id_empleado: employee.id_empleado,
+              detalles: [
+                {
+                  id_producto: p.id_producto,
+                  cantidad: 1,
+                  costo_unitario: value,
+                },
+              ],
+            },
+            400,
+          );
+          await call(
+            "ventas",
+            "POST",
+            {
+              id_cliente: client.id_cliente,
+              id_empleado: employee.id_empleado,
+              detalles: [
+                {
+                  id_producto: p.id_producto,
+                  cantidad: 1,
+                  precio_unitario: value,
+                },
+              ],
+            },
+            400,
+          );
+        }
+        assert.equal((await call("productos")).length, before);
+        assert.equal(
+          (await call("productos/" + p.id_producto)).precio_venta,
+          3,
+        );
+        assert.equal((await call("compras")).length, 0);
+        assert.equal((await call("ventas")).length, 0);
+      },
+    );
     await call("productos", "POST", body, 409);
     await call(
       "productos",
@@ -264,6 +323,105 @@ test("API completa e inventario contra MySQL real", async (t) => {
       assert.equal((await call(k + "/" + h[pk])).total, 6);
       await call(`detalle_${k}/${l[dp]}`, "DELETE", null, 204);
       await call(k + "/" + h[pk], "DELETE", null, 204);
+    }
+    for (const kind of ["compras", "ventas"]) {
+      await t.test(
+        `Consulta de ${kind} coherente durante edición concurrente`,
+        { timeout: 10000 },
+        async () => {
+          const pk = kind === "compras" ? "id_compra" : "id_venta";
+          const price =
+            kind === "compras" ? "costo_unitario" : "precio_unitario";
+          const header =
+            kind === "compras"
+              ? {
+                  id_proveedor: provider.id_proveedor,
+                  id_empleado: employee.id_empleado,
+                }
+              : {
+                  id_cliente: client.id_cliente,
+                  id_empleado: employee.id_empleado,
+                };
+          const oldBody = {
+            ...header,
+            detalles: [
+              { id_producto: p.id_producto, cantidad: 2, [price]: 3.5 },
+            ],
+          };
+          const nextBody = {
+            ...header,
+            detalles: [
+              { id_producto: p.id_producto, cantidad: 7, [price]: 4.25 },
+            ],
+          };
+          const h = await call(kind, "POST", oldBody, 201);
+          const path = kind + "/" + h[pk];
+          let reached,
+            release,
+            captureTimeout,
+            intercepted = false;
+          const captured = new Promise((resolve, reject) => {
+            reached = resolve;
+            captureTimeout = setTimeout(
+              () =>
+                reject(new Error("No se interceptó la consulta comercial.")),
+              5000,
+            );
+          });
+          const resume = new Promise((resolve) => {
+            release = resolve;
+          });
+          const originalQuery = pool.query;
+          // Delay delivery of the real SELECT result, then commit an actual PUT.
+          // This exposes a header/lines split deterministically without faking rows.
+          pool.query = async function (sql, values, ...rest) {
+            const result = await originalQuery.call(this, sql, values, ...rest);
+            if (
+              !intercepted &&
+              typeof sql === "string" &&
+              /^SELECT\b/.test(sql) &&
+              sql.includes(`FROM ${kind}`) &&
+              values?.[0] === h[pk]
+            ) {
+              intercepted = true;
+              reached();
+              await resume;
+            }
+            return result;
+          };
+          const pending = call(path);
+          try {
+            await captured;
+            await call(path, "PUT", nextBody);
+            release();
+            const snapshot = await pending;
+            assert.equal(
+              snapshot.total,
+              snapshot.detalles.reduce((sum, row) => sum + row.subtotal, 0),
+            );
+            assert.equal(snapshot.total, 7);
+            assert.equal(snapshot.detalles[0].cantidad, 2);
+          } finally {
+            clearTimeout(captureTimeout);
+            release();
+            pool.query = originalQuery;
+            await pending.catch(() => {});
+          }
+          const latest = await call(path);
+          assert.equal(latest.total, 29.75);
+          assert.equal(latest.detalles[0].cantidad, 7);
+          await call(path, "DELETE", null, 204);
+          await call(path, "GET", null, 404);
+          const empty = await call(
+            kind,
+            "POST",
+            { ...header, detalles: [] },
+            201,
+          );
+          assert.deepEqual((await call(kind + "/" + empty[pk])).detalles, []);
+          await call(kind + "/" + empty[pk], "DELETE", null, 204);
+        },
+      );
     }
     const movement = (await call("movimientos_inventario"))[0];
     await call("movimientos_inventario/" + movement.id_movimiento);

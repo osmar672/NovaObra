@@ -6,6 +6,7 @@ import { id, check } from "../validators/input.js";
 import { HttpError } from "../middlewares/errors.js";
 import {
   tradeInfo,
+  readTrade,
   saveTrade,
   transition,
   locked,
@@ -38,13 +39,7 @@ for (const k of ["compras", "ventas"]) {
     res.json(rows);
   });
   api.get("/" + k + "/:id", async (req, res) => {
-    const n = id(req.params.id),
-      row = await one(k, pk, n);
-    const [detalles] = await pool.query(
-      `SELECT * FROM ${detail} WHERE ${pk}=? ORDER BY id_producto`,
-      [n],
-    );
-    res.json({ ...row, detalles });
+    res.json(await readTrade(k, id(req.params.id)));
   });
   api.post("/" + k, async (req, res) => {
     const n = await saveTrade(k, null, req.body);
