@@ -1,6 +1,20 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+import {
+  money,
+  localDay,
+  downloadCSV,
+  StockPanel,
+  ReportsPanel,
+  Receipt,
+} from "./features.jsx";
 const labels = {
   dashboard: "Inicio",
   productos: "Productos",
@@ -11,6 +25,7 @@ const labels = {
   compras: "Compras",
   ventas: "Ventas",
   movimientos_inventario: "Inventario",
+  reportes: "Reportes",
 };
 const title = (s) =>
   s.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase());
@@ -26,10 +41,6 @@ async function request(path, method = "GET", body, signal) {
   if (!r.ok) throw new Error(data.error || "Error de conexión.");
   return data;
 }
-const money = (n) =>
-  new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC" }).format(
-    n,
-  );
 function App() {
   // Invalidate old reads immediately on navigation, including a return to the same page.
   const activePage = useRef("dashboard");
@@ -52,7 +63,65 @@ function App() {
     [form, setForm] = useState(null),
     [editing, setEditing] = useState(null),
     [lines, setLines] = useState([]),
-    [requestKey, setRequestKey] = useState("");
+    [requestKey, setRequestKey] = useState(""),
+    [category, setCategory] = useState(""),
+    [fromDate, setFromDate] = useState(""),
+    [toDate, setToDate] = useState(""),
+    [movementType, setMovementType] = useState(""),
+    [pageNumber, setPageNumber] = useState(1),
+    [pageSize, setPageSize] = useState(10),
+    [pagination, setPagination] = useState({ total: 0, paginas: 1 }),
+    [lowStock, setLowStock] = useState([]),
+    [report, setReport] = useState(null),
+    [reportRange, setReportRange] = useState(() => ({
+      desde: localDay().slice(0, 8) + "01",
+      hasta: localDay(),
+    })),
+    [receipt, setReceipt] = useState(null);
+  const listQuery = useMemo(() => {
+    const params = new URLSearchParams({
+      pagina: String(pageNumber),
+      limite: String(pageSize),
+    });
+    if (search.trim()) params.set("q", search.trim());
+    if (filter === "bajo") {
+      params.set("stock", "bajo");
+      params.set("estado", "activo");
+    } else if (filter !== "todos") params.set("estado", filter);
+    if (category) params.set("categoria", category);
+    if (fromDate) params.set("desde", fromDate);
+    if (toDate) params.set("hasta", toDate);
+    if (movementType) params.set("tipo_movimiento", movementType);
+    return params.toString();
+  }, [
+    search,
+    filter,
+    category,
+    fromDate,
+    toDate,
+    movementType,
+    pageNumber,
+    pageSize,
+  ]);
+  const exportQuery = useMemo(() => {
+    const params = new URLSearchParams(listQuery);
+    params.delete("pagina");
+    params.delete("limite");
+    return params.toString();
+  }, [listQuery]);
+  const reportQuery = useMemo(
+    () =>
+      new URLSearchParams(
+        Object.entries(reportRange).filter(([, value]) => value),
+      ).toString(),
+    [reportRange],
+  );
+  const resourcePath =
+    page === "dashboard"
+      ? "dashboard"
+      : page === "reportes"
+        ? `reportes?${reportQuery}`
+        : `${page}?${listQuery}`;
   const trade = ["compras", "ventas"].includes(page),
     movement = page === "movimientos_inventario";
   const pk =
@@ -90,10 +159,13 @@ function App() {
     const get = (path) => request(path, "GET", undefined, controller.signal);
     setLoading(true);
     setError("");
+    if (page === "reportes") setReport(null);
+    else if (page !== "dashboard") setData([]);
     try {
-      const [metadata, result, ...lists] = await Promise.all([
+      const [metadata, result, stockResult, ...lists] = await Promise.all([
         get("metadata"),
-        get(page === "dashboard" ? "dashboard" : page),
+        get(resourcePath),
+        page === "dashboard" ? get("inventario-bajo") : Promise.resolve(null),
         ...[
           "productos",
           "categorias",
@@ -104,8 +176,19 @@ function App() {
       ]);
       if (!current()) return;
       setMeta(metadata);
-      if (page === "dashboard") setDashboard(result);
-      else setData(result);
+      if (page === "dashboard") {
+        setDashboard(result);
+        setLowStock(stockResult);
+      } else if (page === "reportes") setReport(result);
+      else {
+        setData(result.datos);
+        setPagination({
+          total: result.total,
+          paginas: Math.max(1, result.paginas),
+        });
+        if (pageNumber > Math.max(1, result.paginas))
+          setPageNumber(Math.max(1, result.paginas));
+      }
       setLookups(
         Object.fromEntries(
           [
@@ -123,7 +206,7 @@ function App() {
       if (current()) setLoading(false);
       if (loadController.current === controller) loadController.current = null;
     }
-  }, [page]);
+  }, [page, resourcePath, pageNumber]);
   useEffect(() => {
     load();
     return () => {
@@ -131,7 +214,13 @@ function App() {
       editController.current?.abort();
     };
   }, [load]);
-  function navigate(p) {
+  useEffect(() => {
+    if (receipt)
+      document
+        .querySelector(".receipt-preview")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [receipt]);
+  function navigate(p, options = {}) {
     if (p === activePage.current) return;
     activePage.current = p;
     viewVersion.current++;
@@ -147,11 +236,19 @@ function App() {
     setForm(null);
     setEditing(null);
     setSearch("");
-    setFilter("todos");
+    setFilter(options.lowStock ? "bajo" : "todos");
+    setCategory("");
+    setFromDate("");
+    setToDate("");
+    setMovementType("");
+    setPageNumber(1);
+    setReceipt(null);
     setNotice("");
     setError("");
   }
   function fresh() {
+    setPageNumber(1);
+    setReceipt(null);
     setRequestKey(crypto.randomUUID());
     setEditing(null);
     setForm(
@@ -163,7 +260,7 @@ function App() {
             : t === "movement"
               ? "entrada"
               : t === "date"
-                ? new Date().toISOString().slice(0, 10)
+                ? localDay()
                 : ["quantity", "money"].includes(t)
                   ? 0
                   : "",
@@ -216,6 +313,13 @@ function App() {
     }
   }
   async function perform(fn, message) {
+    // A sales write invalidates every printable snapshot, including pending reads.
+    if (page === "ventas") {
+      setReceipt(null);
+      editVersion.current++;
+      editController.current?.abort();
+      editController.current = null;
+    }
     const view = viewVersion.current;
     const current = () =>
       activePage.current === page && viewVersion.current === view;
@@ -346,21 +450,108 @@ function App() {
       />
     );
   }
-  const visible = data.filter(
-    (r) =>
-      JSON.stringify(r)
-        .toLocaleLowerCase()
-        .includes(search.toLocaleLowerCase()) &&
-      (filter === "todos" || filter === "bajo"
-        ? filter !== "bajo" || r.stock <= r.stock_minimo
-        : r.estado === filter),
+  async function exportFile(path, filename) {
+    const view = viewVersion.current;
+    setBusy(true);
+    setError("");
+    try {
+      await downloadCSV(path, filename);
+      if (viewVersion.current === view) setNotice("Archivo CSV descargado.");
+    } catch (e) {
+      if (viewVersion.current === view) setError(e.message);
+    } finally {
+      if (viewVersion.current === view) setBusy(false);
+    }
+  }
+  async function showReceipt(row) {
+    const view = viewVersion.current,
+      version = ++editVersion.current;
+    editController.current?.abort();
+    const controller = new AbortController();
+    editController.current = controller;
+    const current = () =>
+      viewVersion.current === view &&
+      editVersion.current === version &&
+      !controller.signal.aborted;
+    setBusy(true);
+    setError("");
+    try {
+      const value = await request(
+        `ventas/${row.id_venta}/comprobante`,
+        "GET",
+        undefined,
+        controller.signal,
+      );
+      if (current()) {
+        setReceipt(value);
+        setForm(null);
+      }
+    } catch (e) {
+      if (current() && e.name !== "AbortError") setError(e.message);
+    } finally {
+      if (current()) setBusy(false);
+      if (editController.current === controller) editController.current = null;
+    }
+  }
+  function setListFilter(setter, value) {
+    setPageNumber(1);
+    setter(value);
+  }
+  const visible = data;
+  const relationshipColumns = {
+    id_categoria: "categoria_nombre",
+    id_proveedor: "proveedor_nombre",
+    id_cliente: "cliente_nombre",
+    id_empleado: "empleado_nombre",
+    id_producto: "producto_nombre",
+  };
+  const columnNames = {
+    categoria_nombre: "Categoría",
+    proveedor_nombre: "Proveedor",
+    cliente_nombre: "Cliente",
+    empleado_nombre: "Empleado",
+    producto_nombre: "Producto",
+  };
+  const rawColumns = meta[page]
+    ? [
+        pk,
+        ...Object.keys(meta[page].fields),
+        ...(page === "productos" ? ["stock"] : []),
+      ]
+    : trade
+      ? [
+          pk,
+          page === "compras" ? "id_proveedor" : "id_cliente",
+          "id_empleado",
+          page === "compras" ? "fecha_compra" : "fecha_venta",
+          "total",
+          "estado",
+        ]
+      : [
+          "id_movimiento",
+          "id_producto",
+          "tipo_movimiento",
+          "cantidad",
+          "fecha_movimiento",
+          "descripcion",
+        ];
+  const columns = rawColumns.map((k) =>
+    k === pk ? k : relationshipColumns[k] || k,
   );
-  const columns = data.length
-    ? Object.keys(data[0]).filter((k) => k !== "clave_solicitud")
-    : [];
+  function cellValue(row, key) {
+    if (row[key] !== undefined) return row[key];
+    const idKey = Object.keys(relationshipColumns).find(
+      (k) => relationshipColumns[k] === key,
+    );
+    if (!idKey) return row[key];
+    const related = (lookups[refTable(idKey)] || []).find(
+      (r) => r[idKey] === row[idKey],
+    );
+    return related ? `${related.nombre} ${related.apellido || ""}`.trim() : "—";
+  }
   const price = page === "compras" ? "costo_unitario" : "precio_unitario";
   return (
-    <div className="shell">
+    <div className={"shell" + (receipt ? " showing-receipt" : "")}>
       <aside>
         <a
           className="brand"
@@ -428,11 +619,12 @@ function App() {
             {notice}
           </div>
         )}
-        {loading ? (
-          <div className="empty" role="status">
+        {loading && (
+          <div className="loading-line" role="status">
             Cargando información…
           </div>
-        ) : page === "dashboard" ? (
+        )}
+        {page === "dashboard" ? (
           dashboard && (
             <>
               <section className="cards">
@@ -472,6 +664,17 @@ function App() {
                   <p className="empty">Aún no hay movimientos registrados.</p>
                 )}
               </section>
+              <StockPanel
+                products={lowStock}
+                disabled={busy}
+                onReview={() => navigate("productos", { lowStock: true })}
+                onExport={() =>
+                  exportFile(
+                    "inventario-bajo/exportar.csv",
+                    "NovaObra_Reposicion.csv",
+                  )
+                }
+              />
               <section className="panel">
                 <h2>Operaciones del día a día</h2>
                 <p>
@@ -492,30 +695,58 @@ function App() {
               </section>
             </>
           )
+        ) : page === "reportes" ? (
+          <ReportsPanel
+            data={report}
+            range={reportRange}
+            onRangeChange={setReportRange}
+            loading={loading}
+            busy={busy}
+            onExport={() =>
+              exportFile(
+                `reportes/exportar.csv?${reportQuery}`,
+                "NovaObra_Reportes.csv",
+              )
+            }
+          />
         ) : (
           <>
             <section className="panel">
               <div className="toolbar">
                 <div>
                   <h2>Registros de {labels[page].toLowerCase()}</h2>
-                  <span className="muted">{visible.length} resultados</span>
+                  <span className="muted">{pagination.total} resultados</span>
                 </div>
-                <button onClick={fresh} disabled={busy}>
-                  + {movement ? "Registrar ajuste" : "Crear registro"}
-                </button>
+                <div className="actions wrap-actions">
+                  <button
+                    className="secondary"
+                    disabled={loading || busy}
+                    onClick={() =>
+                      exportFile(
+                        `${page}/exportar.csv?${exportQuery}`,
+                        `NovaObra_${page}.csv`,
+                      )
+                    }
+                  >
+                    Descargar CSV
+                  </button>
+                  <button onClick={fresh} disabled={busy || loading}>
+                    + {movement ? "Registrar ajuste" : "Crear registro"}
+                  </button>
+                </div>
               </div>
               <div className="filters">
                 <input
                   aria-label="Buscar registros"
                   placeholder="Buscar en los registros…"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => setListFilter(setSearch, e.target.value)}
                 />
                 {!movement && (
                   <select
                     aria-label="Filtrar registros"
                     value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
+                    onChange={(e) => setListFilter(setFilter, e.target.value)}
                   >
                     <option value="todos">Todos</option>
                     {(trade
@@ -532,8 +763,65 @@ function App() {
                     ))}
                   </select>
                 )}
+                {page === "productos" && (
+                  <select
+                    aria-label="Categoría"
+                    value={category}
+                    onChange={(e) => setListFilter(setCategory, e.target.value)}
+                  >
+                    <option value="">Todas las categorías</option>
+                    {(lookups.categorias || []).map((c) => (
+                      <option key={c.id_categoria} value={c.id_categoria}>
+                        {c.nombre}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {movement && (
+                  <select
+                    aria-label="Tipo de movimiento"
+                    value={movementType}
+                    onChange={(e) =>
+                      setListFilter(setMovementType, e.target.value)
+                    }
+                  >
+                    <option value="">Todos los movimientos</option>
+                    <option value="entrada">Entradas</option>
+                    <option value="salida">Salidas</option>
+                  </select>
+                )}
+                {(trade || movement) && (
+                  <>
+                    <label>
+                      Desde
+                      <input
+                        aria-label="Desde"
+                        type="date"
+                        value={fromDate}
+                        max={toDate || undefined}
+                        onChange={(e) =>
+                          setListFilter(setFromDate, e.target.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      Hasta
+                      <input
+                        aria-label="Hasta"
+                        type="date"
+                        value={toDate}
+                        min={fromDate || undefined}
+                        onChange={(e) =>
+                          setListFilter(setToDate, e.target.value)
+                        }
+                      />
+                    </label>
+                  </>
+                )}
               </div>
-              {!visible.length ? (
+              {loading ? (
+                <div className="empty">Consultando registros…</div>
+              ) : !visible.length ? (
                 <div className="empty">No hay registros para mostrar.</div>
               ) : (
                 <div className="table-wrap">
@@ -541,22 +829,40 @@ function App() {
                     <thead>
                       <tr>
                         {columns.map((k) => (
-                          <th key={k}>{title(k)}</th>
+                          <th key={k}>{columnNames[k] || title(k)}</th>
                         ))}
                         {!movement && <th>Acciones</th>}
                       </tr>
                     </thead>
                     <tbody>
                       {visible.map((r) => (
-                        <tr key={r[pk]}>
+                        <tr
+                          key={r[pk]}
+                          className={
+                            page === "productos" &&
+                            r.estado === "activo" &&
+                            r.stock <= r.stock_minimo
+                              ? "low-stock-row"
+                              : undefined
+                          }
+                        >
                           {columns.map((k) => (
                             <td key={k}>
                               {k === "estado" ? (
                                 <span className={"badge " + r[k]}>{r[k]}</span>
                               ) : k.includes("precio") || k === "total" ? (
                                 money(r[k])
+                              ) : k === "stock" &&
+                                r.estado === "activo" &&
+                                r.stock <= r.stock_minimo ? (
+                                <span
+                                  className="badge attention"
+                                  title="Inventario por reponer"
+                                >
+                                  {r[k]}
+                                </span>
                               ) : (
-                                String(r[k] ?? "—")
+                                String(cellValue(r, k) ?? "—")
                               )}
                             </td>
                           ))}
@@ -590,6 +896,15 @@ function App() {
                                     >
                                       Detalles
                                     </button>
+                                    {page === "ventas" && (
+                                      <button
+                                        className="link"
+                                        disabled={busy}
+                                        onClick={() => showReceipt(r)}
+                                      >
+                                        Comprobante
+                                      </button>
+                                    )}
                                     {r.estado === "borrador" && (
                                       <button
                                         className="link"
@@ -619,6 +934,45 @@ function App() {
                   </table>
                 </div>
               )}
+              <div className="pagination">
+                <label>
+                  Registros por página
+                  <select
+                    aria-label="Registros por página"
+                    value={pageSize}
+                    onChange={(e) =>
+                      setListFilter(setPageSize, Number(e.target.value))
+                    }
+                  >
+                    {[10, 25, 50, 100].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <span aria-live="polite">
+                  Página {pageNumber} de {pagination.paginas}
+                </span>
+                <div className="actions">
+                  <button
+                    className="secondary"
+                    disabled={loading || busy || pageNumber <= 1}
+                    onClick={() => setPageNumber((n) => n - 1)}
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    className="secondary"
+                    disabled={
+                      loading || busy || pageNumber >= pagination.paginas
+                    }
+                    onClick={() => setPageNumber((n) => n + 1)}
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
               {movement && (
                 <p className="muted">
                   El historial es inmutable. Para corregir una entrada o salida
@@ -784,6 +1138,7 @@ function App() {
             </form>
           </section>
         )}
+        {receipt && <Receipt data={receipt} onClose={() => setReceipt(null)} />}
         <footer>NovaObra Control · Herramientas para administrar mejor.</footer>
       </main>
     </div>

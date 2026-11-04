@@ -7,6 +7,26 @@ import { chromium } from "playwright-core";
 const base = process.env.UI_URL || "http://127.0.0.1:5173";
 const api = process.env.API_URL || "http://127.0.0.1:3001/api";
 
+async function searchRecords(page, value) {
+  const loaded = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname.startsWith("/api/") &&
+      url.searchParams.get("q") === value &&
+      url.searchParams.has("pagina")
+    );
+  });
+  await page
+    .getByRole("textbox", { name: "Buscar registros", exact: true })
+    .fill(value);
+  await loaded;
+  await page.waitForFunction(
+    () =>
+      !document.body.innerText.includes("Cargando información…") &&
+      !document.body.innerText.includes("Consultando registros…"),
+  );
+}
+
 async function call(path, method = "GET", body, expected = 200) {
   const response = await fetch(`${api}/${path}`, {
     method,
@@ -45,7 +65,9 @@ async function navigate(page, label, firstColumn) {
     .getByRole("columnheader", { name: firstColumn, exact: true })
     .waitFor();
   await page.waitForFunction(
-    () => !document.body.innerText.includes("Cargando información…"),
+    () =>
+      !document.body.innerText.includes("Cargando información…") &&
+      !document.body.innerText.includes("Consultando registros…"),
   );
 }
 
@@ -101,7 +123,11 @@ test(
     const { browser, page } = await openBrowser();
     let held;
     try {
-      held = await holdResponse(page, "**/api/categorias");
+      held = await holdResponse(
+        page,
+        (url) =>
+          url.pathname === "/api/categorias" && url.searchParams.has("pagina"),
+      );
       await page
         .locator("nav button")
         .filter({ hasText: "Categorías" })
@@ -280,9 +306,7 @@ for (const entity of [
         assert.equal(persisted.telefono, "88882222");
         if (entity.table !== "clientes")
           assert.equal(persisted.estado, "inactivo");
-        await page
-          .getByRole("textbox", { name: "Buscar registros", exact: true })
-          .fill(updated);
+        await searchRecords(page, updated);
         assert.equal(await page.locator("tbody tr").count(), 1);
         // Dismissing the confirmation must preserve the record.
         page.once("dialog", (dialog) => dialog.dismiss());

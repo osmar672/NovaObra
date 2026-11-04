@@ -82,3 +82,9 @@ Navegador → React/Fetch → Express REST → mysql2/promise → MySQL 8. Los m
 8. Entrega: documentación, colección Postman y empaquetador reproducible.
 
 Las capacidades verificadas y las pendientes se detallan en el informe de pruebas. La ausencia de autenticación corresponde a la actividad académica y no al diseño de un servicio público.
+
+## Ampliación funcional
+
+Se añaden reportes por fechas, lista de reposición, comprobantes imprimibles, exportaciones CSV y consultas paginadas con nombres relacionados. No se altera el esquema de diez tablas. Las consultas de reportes y de páginas con su total usan una instantánea de lectura coherente para evitar resultados de momentos distintos.
+
+La ganancia es una estimación comercial a costo actual, no un cálculo histórico del costo de ventas. El umbral de reposición se supera con una unidad adicional. Los comprobantes son internos y conservan el estado comercial. Los respaldos usan clientes MySQL 8 y un formato SQL controlado que permite restaurar solo el esquema esperado y sus datos en un destino sin tablas ni vistas.

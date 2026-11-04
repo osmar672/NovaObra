@@ -10,12 +10,17 @@ export const tradeInfo = (k) => ({
 export async function readTrade(k, n) {
   const { pk, price } = tradeInfo(k);
   const detailPk = k === "compras" ? "id_detalle_compra" : "id_detalle_venta";
+  const party = k === "compras" ? "proveedor" : "cliente";
+  const people = k === "compras" ? "proveedores" : "clientes";
   const [rows] = await pool.query(
-    `SELECT h.*, d.${detailPk} AS line_id, d.id_producto AS line_product,
+    `SELECT h.*, a.nombre AS ${party}_nombre,a.telefono AS ${party}_telefono,a.correo AS ${party}_correo,a.direccion AS ${party}_direccion,CONCAT(e.nombre,' ',e.apellido) AS empleado_nombre, d.${detailPk} AS line_id, d.id_producto AS line_product,
             d.cantidad AS line_quantity, d.${price} AS line_price,
-            d.subtotal AS line_subtotal
+            d.subtotal AS line_subtotal,p.nombre AS line_name,p.codigo AS line_code
        FROM ${k} h
+       JOIN ${people} a ON a.id_${party}=h.id_${party}
+       JOIN empleados e ON e.id_empleado=h.id_empleado
        LEFT JOIN detalle_${k} d ON d.${pk}=h.${pk}
+       LEFT JOIN productos p ON p.id_producto=d.id_producto
       WHERE h.${pk}=? ORDER BY d.id_producto`,
     [n],
   );
@@ -26,6 +31,8 @@ export async function readTrade(k, n) {
     line_quantity,
     line_price,
     line_subtotal,
+    line_name,
+    line_code,
     ...header
   } = rows[0];
   const detalles = rows
@@ -37,6 +44,8 @@ export async function readTrade(k, n) {
       cantidad: row.line_quantity,
       [price]: row.line_price,
       subtotal: row.line_subtotal,
+      producto_nombre: row.line_name,
+      producto_codigo: row.line_code,
     }));
   return { ...header, detalles };
 }

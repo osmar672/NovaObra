@@ -4,6 +4,27 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
 const base = process.env.UI_URL || "http://127.0.0.1:5173";
 const api = process.env.API_URL || "http://127.0.0.1:3001/api";
+
+async function searchRecords(page, value) {
+  const loaded = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname.startsWith("/api/") &&
+      url.searchParams.get("q") === value &&
+      url.searchParams.has("pagina")
+    );
+  });
+  await page
+    .getByRole("textbox", { name: "Buscar registros", exact: true })
+    .fill(value);
+  await loaded;
+  await page.waitForFunction(
+    () =>
+      !document.body.innerText.includes("Cargando información…") &&
+      !document.body.innerText.includes("Consultando registros…"),
+  );
+}
+
 async function get(path) {
   const r = await fetch(api + "/" + path);
   assert.equal(r.status, 200);
@@ -33,7 +54,9 @@ test("React: CRUD persistente, navegación y diseño móvil con API y MySQL real
       .getByRole("button", { name: "Actualizar", exact: true })
       .waitFor();
     await page.waitForFunction(
-      () => !document.body.innerText.includes("Cargando información…"),
+      () =>
+        !document.body.innerText.includes("Cargando información…") &&
+        !document.body.innerText.includes("Consultando registros…"),
     );
   };
   try {
@@ -85,7 +108,7 @@ test("React: CRUD persistente, navegación y diseño móvil con API y MySQL real
     product = (await get("productos")).find((p) => p.codigo === code);
     assert.ok(product);
     assert.equal(product.stock, 0);
-    await page.getByRole("textbox", { name: "Buscar registros" }).fill(code);
+    await searchRecords(page, code);
     assert.equal(await page.locator("tbody tr").count(), 1);
     page.once("dialog", (d) => d.accept());
     await page
@@ -179,17 +202,17 @@ test("React: compra, venta y cancelaciones actualizan MySQL y su historial", asy
   const nav = async (label) => {
     await page.locator("nav button").filter({ hasText: label }).click();
     await page.waitForFunction(
-      () => !document.body.innerText.includes("Cargando información…"),
+      () =>
+        !document.body.innerText.includes("Cargando información…") &&
+        !document.body.innerText.includes("Consultando registros…"),
     );
   };
   const row = (id) =>
-    page
-      .locator("tbody tr")
-      .filter({
-        has: page.locator("td:first-child", {
-          hasText: new RegExp("^" + id + "$"),
-        }),
-      });
+    page.locator("tbody tr").filter({
+      has: page.locator("td:first-child", {
+        hasText: new RegExp("^" + id + "$"),
+      }),
+    });
   async function create(k, label, qty) {
     const before = new Set(
       (await get(k)).map((x) => x[k === "compras" ? "id_compra" : "id_venta"]),

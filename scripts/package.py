@@ -4,7 +4,7 @@ import zipfile
 root=Path(__file__).resolve().parents[1]
 out=root/'artifacts'/'NovaObra_Control_Completo.zip'
 out.parent.mkdir(exist_ok=True)
-exclude={'.git','node_modules','dist','artifacts','__pycache__','.cache','test-results','playwright-report'}
+exclude={'.git','node_modules','dist','artifacts','__pycache__','.cache','test-results','playwright-report','backups','respaldos'}
 with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as z:
  for p in sorted(root.rglob('*')):
   rel=p.relative_to(root)

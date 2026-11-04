@@ -79,3 +79,9 @@ Para usar credenciales distintas en Bash, establece las variables DB_USER y DB_P
 - Puerto ocupado: detener la instancia propia anterior o configurar otro puerto y su proxy.
 
 Los binarios MySQL utilizados para verificar en la nube no se distribuyen en el ZIP. Instala MySQL para tu sistema. Windows y macOS requieren validación en su propio entorno.
+
+## Funciones adicionales y respaldo
+
+La interfaz incluye Reportes y comprobantes imprimibles de venta, alertas y lista de reposición, filtros paginados y exportaciones CSV. No requieren otras dependencias de aplicación. Ver `docs/manual.md`.
+
+Para respaldar y restaurar, instalar también los clientes oficiales MySQL 8 `mysql` y `mysqldump`. Las rutas pueden configurarse con MYSQL_PATH y MYSQLDUMP_PATH. Consultar `docs/respaldos.md`: la restauración exige un destino sin tablas ni vistas y no borra bases ocupadas. Ejecutar `npm run test:backup` con una cuenta de pruebas permite verificar el recorrido completo sobre bases temporales.

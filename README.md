@@ -64,6 +64,17 @@ Las pruebas de navegador y la colección automatizada Postman usan una base de d
 - `postman/`: colección manual y colección automatizada de verificación para las diez entidades.
 - `scripts/package.py`: genera el ZIP excluyendo credenciales, dependencias y temporales.
 
+## Mejoras de gestión
+
+- Reportes por fechas de compras y ventas confirmadas, productos más vendidos y ganancia estimada según el costo actual del catálogo.
+- Comprobantes internos de venta para imprimir o guardar como PDF desde el navegador.
+- Alertas de inventario bajo y lista de reposición de productos activos con cantidades y costos sugeridos.
+- Nombres relacionados en tablas y detalles, búsqueda, filtros y paginación en el servidor.
+- CSV compatible con Excel para catálogos, operaciones, movimientos, reportes y reposición. Exporta todo el resultado filtrado.
+- Respaldo SQL consistente y restauración verificada en una base nueva o sin tablas ni vistas, con los clientes oficiales MySQL 8.
+
+Consultar [manual](docs/manual.md), [API](docs/api.md) y [respaldos](docs/respaldos.md). Se mantienen las diez tablas y no se agregan dependencias de aplicación.
+
 ## Reglas esenciales
 
 Las operaciones nacen como borradores. Sus detalles se pueden editar hasta confirmar. Confirmar aplica inventario una sola vez; cancelar revierte una operación confirmada una sola vez. Cancelar una compra exige stock suficiente para devolver sus unidades. Un borrador cancelado no altera el stock. Los movimientos son inmutables; los errores se corrigen con entradas o salidas compensatorias.

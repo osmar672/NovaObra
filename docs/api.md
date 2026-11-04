@@ -76,8 +76,36 @@ POST `/movimientos_inventario`:
 
 Cantidades enteras positivas para líneas y movimientos, umbral entero no negativo. Importes como números JSON con hasta dos decimales, máximo 9999999999.99 por unidad; cantidad máxima 1000000. El almacenamiento DECIMAL limita el total comercial a 999999999999.99. No se permiten campos arbitrarios, fechas inválidas ni claves foráneas inexistentes.
 
-Las listas cargan el conjunto completo y la búsqueda se realiza en el navegador; son adecuadas para el alcance académico. No incluyen paginación para volúmenes empresariales grandes.
+Las listas permiten búsqueda y filtros en el servidor. Sin parámetros de paginación mantienen el arreglo original para compatibilidad. Con `pagina` o `limite` devuelven `{datos,total,pagina,limite,paginas}`; `pagina` inicia en 1, `limite` es 10 por defecto y admite hasta 100.
+
+```text
+GET /api/productos?pagina=1&limite=10&q=martillo&categoria=1&estado=activo
+GET /api/productos?pagina=1&stock=bajo&estado=activo
+GET /api/ventas?pagina=1&estado=confirmada&desde=2026-11-01&hasta=2026-11-30
+GET /api/movimientos_inventario?tipo_movimiento=entrada&q=HER-001
+```
+
+`q` busca códigos, nombres y datos de contacto relacionados; los caracteres `%` y `_` se buscan literalmente. Las fechas son inclusivas según el valor almacenado en MySQL. Se rechazan fechas imposibles, intervalos invertidos, estados inválidos y límites fuera de rango. Las listas incluyen campos como `categoria_nombre`, `cliente_nombre`, `proveedor_nombre`, `empleado_nombre` y `producto_nombre` según el recurso.
+
+## Reportes, reposición, comprobantes y CSV
+
+| Método | Ruta                                        | Resultado                                                       |
+| ------ | ------------------------------------------- | --------------------------------------------------------------- |
+| GET    | /reportes?desde=YYYY-MM-DD&hasta=YYYY-MM-DD | Resumen y productos más vendidos; solo operaciones confirmadas  |
+| GET    | /inventario-bajo                            | Productos activos con stock menor o igual al mínimo             |
+| GET    | /ventas/:id/comprobante                     | Venta coherente, cliente, empleado y líneas con nombres/códigos |
+| GET    | /recurso/exportar.csv                       | CSV de cualquiera de los diez recursos                          |
+| GET    | /reportes/exportar.csv                      | Resumen y productos del reporte                                 |
+| GET    | /inventario-bajo/exportar.csv               | Lista de reposición                                             |
+
+Los CSV también admiten la terminación `/exportar`. El inventario bajo tiene el alias `/inventario/bajo`. Los filtros de la tabla se conservan al exportar; `pagina` y `limite` no recortan el CSV. Se incluye BOM UTF-8, comillas escapadas y protección de cadenas que Excel podría interpretar como fórmulas.
+
+El reporte devuelve `desde`, `hasta`, `resumen`, `mas_vendidos` y `criterio_ganancia`. El resumen contiene `ventas`, `cantidad_ventas`, `compras`, `cantidad_compras`, `costo_estimado` y `ganancia_estimada`. Sin fechas, cubre los últimos treinta días hasta hoy en Costa Rica. La ganancia estima ingresos menos unidades vendidas por `precio_compra` actual: no usa costos históricos ni representa utilidad contable.
+
+La reposición propone `objetivo=stock_minimo+1`, `faltante=objetivo-stock` y `costo_reposicion=faltante*precio_compra`. Acepta búsqueda `q` y `categoria`. No crea compras automáticamente.
+
+El comprobante conserva el estado de la venta, incluso si es borrador o cancelada, y se identifica como documento interno, sin validez de factura electrónica. La interfaz utiliza la impresión del navegador para guardar PDF, sin servicios externos.
 
 ## Colecciones Postman
 
-`postman/NovaObra.postman_collection.json` permite explorar los endpoints manualmente. `postman/NovaObra.verificacion.postman_collection.json` ejecuta un recorrido automatizado con comprobaciones explícitas y crea sus propias relaciones. Usar esta última sobre una base de desarrollo desechable: sus operaciones comerciales conservan historial. El comando con Newman está documentado en `docs/pruebas.md`.
+`postman/NovaObra.postman_collection.json` permite explorar los endpoints manualmente. `postman/NovaObra.verificacion.postman_collection.json` ejecuta un recorrido automatizado con comprobaciones explícitas y crea sus propias relaciones. Usar esta última sobre una base de desarrollo desechable: sus operaciones comerciales conservan historial. `postman/NovaObra.mejoras.postman_collection.json` valida las nuevas funciones. El comando con Newman está documentado en `docs/pruebas.md`.

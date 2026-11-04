@@ -2,6 +2,7 @@ import { pool, transaction } from "../config/db.js";
 import { entities } from "../models/entities.js";
 import { record, id, check, quantity, text } from "../validators/input.js";
 import { HttpError } from "../middlewares/errors.js";
+import { registerList } from "../services/queries.js";
 export async function one(table, pk, n) {
   const [[row]] = await pool.query(`SELECT * FROM ${table} WHERE ${pk}=?`, [n]);
   if (!row) throw new HttpError(404, "Registro inexistente.");
@@ -9,12 +10,7 @@ export async function one(table, pk, n) {
 }
 export function crud(router) {
   for (const [table, { pk, fields }] of Object.entries(entities)) {
-    router.get("/" + table, async (req, res) => {
-      const [rows] = await pool.query(
-        `SELECT * FROM ${table} ORDER BY ${pk} DESC`,
-      );
-      res.json(rows);
-    });
+    registerList(router, table);
     router.get("/" + table + "/:id", async (req, res) =>
       res.json(await one(table, pk, id(req.params.id))),
     );
@@ -37,12 +33,7 @@ export function crud(router) {
       res.status(204).end();
     });
   }
-  router.get("/movimientos_inventario", async (req, res) => {
-    const [rows] = await pool.query(
-      "SELECT * FROM movimientos_inventario ORDER BY id_movimiento DESC",
-    );
-    res.json(rows);
-  });
+  registerList(router, "movimientos_inventario");
   router.get("/movimientos_inventario/:id", async (req, res) =>
     res.json(
       await one("movimientos_inventario", "id_movimiento", id(req.params.id)),

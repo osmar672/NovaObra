@@ -1,81 +1,82 @@
 # Informe de pruebas
 
-Fecha: 4 de noviembre de 2026. Ejecución real en Linux x86_64, Node.js 24.22.1 y MySQL 8.0.46 (Ubuntu), con InnoDB. La instancia MySQL se ejecutó localmente sin Docker. Los paquetes se verificaron mediante firma del índice oficial de Ubuntu y hashes SHA-256 antes de usarlos.
+Fecha: 4 de noviembre de 2026. Ejecución real en Linux x86_64, Node.js 24.22.1, Chromium 155 y MySQL 8.0.46/InnoDB. Los binarios MySQL usados en la nube se obtuvieron de Ubuntu y se verificaron mediante firma del índice y SHA-256. No se utilizó Docker ni se agregaron dependencias de aplicación para las mejoras.
 
-## Resultados
+## Resultados de la revisión
 
-| Comando y directorio                    | Resultado                                         | Cobertura ejecutada                                                                                                                           |
-| --------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm test` en backend                   | 5 pruebas aprobadas                               | IDs, cantidades, importes, correos, fechas, campos prohibidos, protección de estados, JSON y respuestas HTTP                                  |
-| `npm run test:integration` en backend   | 5 pruebas aprobadas (2 escenarios y 3 subpruebas) | MySQL real, diez tablas y diez claves foráneas, restricciones, CRUD, inventario, rollback, precisión monetaria y consulta/edición concurrente |
-| `npm run test:ui` en frontend           | 8 escenarios aprobados                            | Chromium con React → Express → MySQL; CRUD de los cinco catálogos, navegación, compras/ventas, ajustes y regresiones de respuestas atrasadas  |
-| Newman 6.2.3, colección de verificación | 139 solicitudes y 419 aserciones aprobadas        | Diez recursos, persistencia, validaciones, estados comerciales, stock, cancelaciones y reintentos                                             |
-| `npm run build` en frontend             | Aprobado                                          | Compilación de producción React/Vite                                                                                                          |
-| `npm run db:setup -- --seed` en backend | Aprobado                                          | Esquema y datos iniciales en novaobra_db                                                                                                      |
+| Verificación                        | Resultado                                  | Alcance ejecutado                                                                                                       |
+| ----------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `npm test`, backend                 | 6 pruebas aprobadas                        | Validación, respuestas HTTP, estados y analizador de respaldos                                                          |
+| `npm run test:integration`, backend | 12 pruebas aprobadas                       | API/MySQL, restricciones, diez tablas, inventario, concurrencia, precisión, reportes, fechas, nombres, CSV y paginación |
+| `npm run test:backup`, backend      | 1 integración aprobada                     | Respaldo y restauración real con clientes MySQL 8 y protecciones del destino                                            |
+| `npm run test:ui`, frontend         | 10 escenarios aprobados                    | Flujos anteriores más filtros, paginación, CSV, reportes, reposición y PDF real                                         |
+| Newman, colección de verificación   | 139 solicitudes y 419 aserciones aprobadas | Diez recursos, CRUD, persistencia, estados y errores                                                                    |
+| Newman, colección de mejoras        | 38 solicitudes y 99 aserciones aprobadas   | Reportes, nombres, filtros, CSV, comprobantes y reposición                                                              |
+| `npm run build`, frontend           | Aprobado                                   | Compilación React/Vite                                                                                                  |
+| Arranque con puerto HTTP ocupado    | Aprobado                                   | Termina con código 1 y EADDRINUSE; no anuncia disponibilidad                                                            |
 
-La prueba de concurrencia envía dos confirmaciones simultáneas que compiten por las mismas unidades: una obtiene 200 y la otra 409; el saldo final permanece no negativo. El rollback se verifica intentando una venta de dos productos: el primero tiene stock y el segundo no. Se comprueba que no cambian ni el stock inicial, ni el estado del borrador, ni el número de movimientos.
+Los conteos de integración incluyen escenarios superiores y subpruebas del ejecutor de Node. No son un conteo de endpoints. Las dos colecciones Postman sumaron 177 solicitudes y 518 aserciones, sin fallos. Sus informes JSON regenerables se guardaron en `artifacts/` y se excluyen de Git y del ZIP.
 
-La cancelación de una compra con unidades ya vendidas se rechaza por stock insuficiente. Tras cancelar la venta, la cancelación de la compra sí se completa. Confirmar o cancelar de nuevo no duplica movimientos. Un ajuste repetido con la misma clave de solicitud responde 409 y no duplica el saldo.
+## Casos comprobados
 
-Las pruebas de navegador crean registros reales y comprueban su persistencia consultando la API que lee MySQL. Los catálogos temporales se eliminan al terminar; el escenario comercial conserva su producto y las operaciones canceladas como historial, con stock cero. No usa datos simulados. La integración de backend usa bases temporales independientes y las elimina al finalizar.
+- **Inventario y concurrencia:** compras/ventas confirmadas actualizan stock y movimientos juntos. Dos ventas simultáneas que compiten por las mismas unidades dan 200 y 409, sin stock negativo. Una venta de varios productos con uno insuficiente deja todo igual mediante rollback. Confirmaciones, cancelaciones y claves repetidas no duplican movimientos.
+- **Lecturas coherentes:** se fuerza una edición comercial real intercalada con una consulta. Total y líneas se mantienen de la misma instantánea. También se conservan las regresiones de navegación y detalles atrasados con respuestas reales retenidas, sin sustituir los datos.
+- **Precios:** se rechaza precisión adicional como `12.340001`, sin guardar ni alterar registros; se aceptan importes normales y el máximo permitido.
+- **Reportes:** límites de fechas inclusivos, exclusión de borradores/cancelaciones, ingresos, compras, cantidades y margen estimado correcto. El costo utilizado es el precio de compra actual, como indica la interfaz.
+- **Consultas:** búsqueda literal de `%` y `_`, búsquedas por códigos/contactos/nombres, validación de estados/fechas/límites y rechazo de entradas de inyección SQL. La paginación conserva nombres relacionados y mantiene compatibilidad con listas sin paginar.
+- **CSV:** BOM UTF-8, comillas y saltos de línea escapados, neutralización de cadenas que parecen fórmulas, filtros conservados y exportación de todas las páginas. Se comprobaron los bytes de descargas reales del navegador.
+- **Reposición:** solo productos activos, stock menor o igual al mínimo, sugerencia hasta mínimo más una unidad, faltante y costo calculados. El enlace del dashboard abre el mismo conjunto filtrado.
+- **Comprobantes:** cliente, empleado, códigos, nombres, precios y total coinciden con MySQL. Chromium generó PDF real con cabecera `%PDF`, comprobante visible y navegación oculta. Un comprobante abierto se invalida al cambiar la venta; al reabrir una venta cancelada muestra ese estado.
+- **Respaldo/restauración:** se compararon las diez tablas y sus filas, claves foráneas, stock, contadores AUTO_INCREMENT con huecos y textos con comillas, acentos, saltos de línea y puntos y coma. Se rechazaron archivos ya existentes, datos SQL arbitrarios, cambios de base y destinos con tablas, incluso vacías o con triggers. Un fallo de clave foránea produjo rollback de inserciones. Las credenciales temporales se eliminaron.
 
-## Regresiones de esta revisión
+UI y Newman utilizaron fixtures propios sobre una base temporal con semilla y cuenta limitada. Las integraciones crearon sus propias bases y las eliminaron al terminar. No se necesitó modificar los registros existentes de novaobra_db.
 
-- **Navegación:** se retiene una respuesta real de categorías, se navega a proveedores y se libera la respuesta anterior. La tabla debe conservar los proveedores. También se retiene la consulta de un detalle comercial: al cambiar de sección, ese resultado no debe abrir otro formulario. No se sustituyen datos con respuestas simuladas.
-- **Consulta comercial concurrente:** se fuerza una edición real entre el momento de leer una operación y entregar su resultado HTTP. Tanto compras como ventas deben devolver total y líneas coherentes. La lectura corregida usa un solo JOIN.
-- **Precisión:** valores como `12.340001`, `0.000001` y `1.0000000000000002` se rechazan con 400 en productos y detalles comerciales, sin guardar cambios. Se aceptan valores normales como `0.29`, `1.1` y el máximo permitido.
-- **Formularios pendientes:** se prueban creación, consulta, edición y eliminación de proveedores, clientes y empleados; correo inválido, desactivación cuando corresponde y rechazo de una eliminación cancelada por el usuario.
-- **Ajustes:** se prueban entrada, salida, cantidad negativa, stock insuficiente, compensación y repetición de la clave enviada realmente por React. El historial queda conciliado con saldo cero.
+## Fallos detectados y corregidos
 
-Las nuevas regresiones se contrastaron con el código anterior. Las dos de navegación fallaron con el frontend anterior y pasaron con la corrección. En backend, el código anterior aceptó precios inválidos (201 en lugar de 400) y devolvió total 7 con líneas que sumaban 29.75 en la lectura intercalada; las correcciones superaron esos mismos casos. El código corregido quedó restaurado después de esa comprobación.
+Las regresiones anteriores se contrastaron con el código previo: la navegación mostraba una tabla de otra sección, un detalle atrasado abría un formulario fuera de su pantalla y la lectura comercial podía mezclar total y líneas. Las correcciones superaron esos casos.
 
-Todas las pruebas ampliadas usaron bases MySQL temporales. Las de integración crean y eliminan sus propias bases; UI y Newman ejecutaron fixtures independientes sobre otra base temporal con semilla y una cuenta limitada a esa base. Los datos existentes de novaobra_db no se usaron para esta revisión.
+Durante estas mejoras se detectó que el acceso a productos por reponer incluía inactivos; se alineó el filtro con el dashboard y se repitieron las pruebas. La revisión final también cerró el comprobante obsoleto tras cancelar una venta y restringió la restauración a bases sin tablas ni vistas, para impedir estructuras o triggers preexistentes. Se verificó además que un puerto ocupado produce un error real de arranque.
 
 ## Reproducir
 
-Desde backend, con MySQL iniciado y `.env` configurado:
+Desde backend, con MySQL 8 y una cuenta de pruebas autorizada para crear/eliminar bases temporales:
 
 ```sh
 npm ci
 npm test
 npm run test:integration
+npm run test:backup
 ```
 
-La integración necesita un usuario de pruebas con permisos para crear y eliminar bases `novaobra_test_*`. No usar una cuenta administrativa para el servidor habitual. Un usuario limitado a novaobra_db puede ejecutar la aplicación, pero no el ejecutor aislado de integración.
+El respaldo requiere los clientes oficiales MySQL 8 en PATH o las variables MYSQL_PATH y MYSQLDUMP_PATH. La cuenta habitual limitada a novaobra_db sirve para la aplicación, pero no para crear todas las bases de pruebas.
 
-Para UI, iniciar `npm start` en backend y `npm run dev` en frontend. Desde otra terminal en frontend:
+Para UI, iniciar Express y Vite contra una base de desarrollo desechable con semilla. Desde frontend:
 
 ```sh
+npm ci
 npx playwright-core install chromium
 npm run test:ui
 ```
 
-Si Chromium ya está instalado, definir `CHROMIUM_PATH` con su ruta. En esta máquina Linux se ejecutó:
+En esta máquina se utilizó el navegador ya instalado:
 
 ```sh
 CHROMIUM_PATH=/usr/bin/chromium CHROMIUM_NO_SANDBOX=1 npm run test:ui
 ```
 
-CHROMIUM_NO_SANDBOX solo fue necesario para el navegador de pruebas en este contenedor. El proyecto no depende de Docker. La descarga de un navegador para pruebas puede requerir acceso adicional a los servidores de Playwright; no es necesaria para iniciar NovaObra. En PowerShell configurar las variables de sesión con `$env:CHROMIUM_PATH` y después ejecutar el mismo comando npm.
-
-## Colección Postman automatizada
+La opción sin sandbox se necesitó exclusivamente para el navegador de pruebas del contenedor. En PowerShell se pueden definir las variables de sesión con `$env:CHROMIUM_PATH`. La descarga opcional de Chromium puede requerir otros destinos de red; no es necesaria para ejecutar la aplicación.
 
 Desde la raíz, con Express conectado a una base de desarrollo desechable:
 
 ```sh
 npm exec --yes --package=newman@6.2.3 -- newman run postman/NovaObra.verificacion.postman_collection.json --bail
+npm exec --yes --package=newman@6.2.3 -- newman run postman/NovaObra.mejoras.postman_collection.json --bail
 ```
 
-La colección crea sus propios catálogos y relaciones, captura los IDs de las respuestas y valida cada resultado. Conserva el historial de las operaciones comerciales con stock conciliado a cero. No ejecutarla contra una base de uso habitual. Puede importarse en Postman; en esta revisión se ejecutó mediante Newman, su ejecutor de colecciones. El informe JSON local `artifacts/postman-verificacion.json` registró 139 solicitudes, 419 aserciones y cero fallos y se excluye de Git y del ZIP por ser una salida regenerable.
+Las colecciones crean sus relaciones y conservan historial comercial conciliado. Se ejecutaron con Newman, no con la aplicación de escritorio Postman.
 
-## Fallos encontrados y resueltos
+## Entrega y límites
 
-- MySQL no estaba instalado y la descarga directa inicial fue denegada por la red. Se utilizó una distribución oficial firmada de Ubuntu; las pruebas MySQL posteriores sí se ejecutaron y pasaron.
-- La primera prueba del selector de categoría encontró un nombre accesible que incluía opciones. Se asignaron nombres accesibles explícitos a los controles y se volvió a ejecutar satisfactoriamente.
-- Se reforzó el instalador para impedir la semilla cuando cualquiera de las tablas ya contiene datos. La semilla incluye IDs iniciales explícitos y su repetición se rechaza sin duplicar registros.
+El ZIP actualizado pasó la comprobación CRC, inspección de contenido y extracción limpia. Desde esa copia se ejecutaron npm ci en backend y frontend, las 6 pruebas unitarias/HTTP, las 12 de integración, la prueba real de respaldo/restauración y la compilación de producción: todas pasaron. Se confirmó que los archivos coinciden con el proyecto y que se excluyen credenciales, node_modules, Git, reportes temporales y carpetas de respaldos. Las 10 pruebas de navegador se ejecutaron contra los servicios del repositorio; los archivos fuente incluidos en el ZIP son idénticos.
 
-## Límites de lo verificado
-
-No se utilizó la aplicación de escritorio Postman. Su colección de verificación sí se ejecutó completa con Newman contra la API y MySQL reales. No se ha verificado Windows o macOS, ni realizado una prueba de carga o un despliegue público. La comprobación en la computadora de presentación sigue pendiente porque no se tiene acceso a ese equipo. La aplicación es académica y local, sin autenticación por requisito. Las pruebas son representativas de los flujos solicitados; no equivalen a cobertura exhaustiva de todas las combinaciones de datos.
-
-El ZIP pasó la comprobación CRC y se extrajo en una carpeta limpia. Desde esa copia se ejecutaron `npm ci` tanto en backend como frontend, las cinco pruebas unitarias/HTTP, las cinco pruebas de integración (dos escenarios con tres subpruebas) con MySQL real y la compilación de producción. Todos pasaron. Se verificó que incluye los archivos de bloqueo y `.env.example`, y que excluye `.env`, `node_modules`, historial Git y archivos temporales. Las pruebas de navegador se ejecutaron contra los servicios iniciados desde el repositorio de desarrollo; la copia extraída se verificó mediante instalación, pruebas de backend/integración y compilación.
+No se ha verificado Windows o macOS ni se tiene acceso a la computadora de presentación. No se hizo una prueba de carga ni un despliegue público. Las pruebas son representativas de los flujos solicitados, no cobertura exhaustiva. El margen de los reportes es una estimación a costo actual; los comprobantes son internos y no sustituyen una factura electrónica. Se mantienen exactamente las diez tablas y la ausencia de autenticación solicitada.

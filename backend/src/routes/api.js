@@ -14,7 +14,10 @@ import {
   line,
   total,
 } from "../services/trade.js";
+import { registerList } from "../services/queries.js";
+import { reports } from "./reports.js";
 export const api = Router();
+api.use(reports);
 api.get("/health", async (req, res) => {
   await pool.query("SELECT 1");
   res.json({ status: "ok", database: "connected" });
@@ -22,7 +25,7 @@ api.get("/health", async (req, res) => {
 api.get("/metadata", (req, res) => res.json(entities));
 api.get("/dashboard", async (req, res) => {
   const [[counts]] = await pool.query(
-    `SELECT (SELECT COUNT(*) FROM productos) productos,(SELECT COUNT(*) FROM productos WHERE stock<=stock_minimo) inventario_bajo,(SELECT COUNT(*) FROM clientes) clientes,(SELECT COUNT(*) FROM proveedores) proveedores,(SELECT COUNT(*) FROM compras) compras,(SELECT COUNT(*) FROM ventas) ventas`,
+    `SELECT (SELECT COUNT(*) FROM productos) productos,(SELECT COUNT(*) FROM productos WHERE estado='activo' AND stock<=stock_minimo) inventario_bajo,(SELECT COUNT(*) FROM clientes) clientes,(SELECT COUNT(*) FROM proveedores) proveedores,(SELECT COUNT(*) FROM compras) compras,(SELECT COUNT(*) FROM ventas) ventas`,
   );
   const [movimientos] = await pool.query(
     "SELECT tipo_movimiento,COUNT(*) operaciones,SUM(cantidad) cantidad FROM movimientos_inventario GROUP BY tipo_movimiento",
@@ -34,10 +37,15 @@ for (const k of ["compras", "ventas"]) {
   const { pk, party, price } = tradeInfo(k),
     detail = "detalle_" + k,
     detailPk = "id_detalle_" + (k === "compras" ? "compra" : "venta");
-  api.get("/" + k, async (req, res) => {
-    const [rows] = await pool.query(`SELECT * FROM ${k} ORDER BY ${pk} DESC`);
-    res.json(rows);
-  });
+  registerList(api, k);
+  if (k === "ventas")
+    api.get("/ventas/:id/comprobante", async (req, res) =>
+      res.json({
+        ...(await readTrade(k, id(req.params.id))),
+        leyenda:
+          "Comprobante interno académico. No es una factura electrónica ni un comprobante fiscal.",
+      }),
+    );
   api.get("/" + k + "/:id", async (req, res) => {
     res.json(await readTrade(k, id(req.params.id)));
   });
@@ -63,12 +71,7 @@ for (const k of ["compras", "ventas"]) {
     api.post(`/${k}/:id/${action}`, async (req, res) =>
       res.json(await transition(k, id(req.params.id), action)),
     );
-  api.get("/" + detail, async (req, res) => {
-    const [rows] = await pool.query(
-      `SELECT * FROM ${detail} ORDER BY ${detailPk} DESC`,
-    );
-    res.json(rows);
-  });
+  registerList(api, detail);
   api.get("/" + detail + "/:id", async (req, res) =>
     res.json(await one(detail, detailPk, id(req.params.id))),
   );
