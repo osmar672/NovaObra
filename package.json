@@ -11,6 +11,8 @@
     "setup": "node iniciar.mjs --setup",
     "test": "npm --prefix backend test",
     "build": "npm --prefix frontend run build",
-    "configurar:mysql": "node configurar-mysql.mjs"
+    "configurar:mysql": "node configurar-mysql.mjs",
+    "tienda": "npm --prefix tienda start",
+    "tienda:build": "npm --prefix tienda run build"
   }
 }

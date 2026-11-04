@@ -1,4 +1,15 @@
-# NovaObra Control
+# NovaObra: Control y Tienda
+
+El repositorio contiene dos aplicaciones independientes:
+
+| Aplicación | Carpeta | Interfaz local | Base predeterminada |
+| --- | --- | --- | --- |
+| Tienda comercial, catálogo, cuentas, carrito, pedidos y administración privada | `tienda/` | `http://127.0.0.1:5174` | `NovaObraTienda` |
+| Sistema académico de gestión de compras y ventas | `backend/` + `frontend/` | `http://127.0.0.1:5173` | `NovaObra` |
+
+**Para la nueva tienda sigue [tienda/README.md](tienda/README.md).** Tiene su propio `.env`, esquema SQL de diez tablas, instalación y pruebas. Las bases no se sincronizan; los catálogos, clientes y existencias de Control no se copian automáticamente a la tienda.
+
+Las instrucciones siguientes corresponden a **NovaObra Control**, que sigue disponible como aplicación local.
 
 Sistema académico local para Ferretería NovaObra, comercializadora de herramientas, materiales de construcción, electricidad y plomería. React + Vite, API Express en JavaScript ES y MySQL 8/InnoDB. Sin autenticación.
 
@@ -87,4 +98,4 @@ Los productos se crean con stock cero; las existencias se cambian por compras, v
 
 Enviar `clave_solicitud` única al crear compras, ventas o ajustes impide duplicados por reintentos: una clave repetida responde 409 y no aplica otra operación. La interfaz genera esa clave automáticamente. Confirmar y cancelar son idempotentes respecto al stock.
 
-El proyecto se limita al uso académico local sin login, roles, JWT ni contraseñas de usuarios de aplicación. Las credenciales de MySQL permanecen en `.env`, nunca en el ZIP.
+NovaObra Control se limita al uso académico local sin login, roles, JWT ni contraseñas de usuarios de aplicación. La aplicación independiente `tienda/` sí incorpora autenticación y roles. Las credenciales de MySQL permanecen en `.env`, nunca en Git.
