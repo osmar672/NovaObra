@@ -1,111 +1,109 @@
-CREATE DATABASE IF NOT EXISTS NovaObra CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE NovaObra;
-
-CREATE TABLE IF NOT EXISTS categorias (
-  id_categoria INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(120) NOT NULL UNIQUE,
-  descripcion VARCHAR(255) NULL,
-  estado ENUM('activo','inactivo') NOT NULL DEFAULT 'activo'
+-- MySQL 8.0.16+. Diez tablas en una base exclusiva. Sin DROP ni datos personales.
+CREATE TABLE IF NOT EXISTS roles (
+ id TINYINT UNSIGNED PRIMARY KEY,
+ nombre VARCHAR(20) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS proveedores (
-  id_proveedor INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(120) NOT NULL,
-  telefono VARCHAR(255) NULL,
-  correo VARCHAR(255) NULL,
-  direccion VARCHAR(255) NULL,
-  estado ENUM('activo','inactivo') NOT NULL DEFAULT 'activo'
+CREATE TABLE IF NOT EXISTS usuarios (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ rol_id TINYINT UNSIGNED NOT NULL,
+ nombre VARCHAR(120) NOT NULL,
+ email VARCHAR(190) NOT NULL UNIQUE,
+ password_hash VARCHAR(200) NOT NULL,
+ activo BOOLEAN NOT NULL DEFAULT TRUE,
+ version_sesion INT UNSIGNED NOT NULL DEFAULT 0,
+ creado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY (rol_id) REFERENCES roles(id)
 ) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS productos (
-  id_producto INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  id_categoria INT UNSIGNED NOT NULL,
-  codigo VARCHAR(120) NOT NULL UNIQUE,
-  nombre VARCHAR(120) NOT NULL,
-  descripcion VARCHAR(255) NULL,
-  precio_compra DECIMAL(12,2) NOT NULL CHECK (precio_compra >= 0),
-  precio_venta DECIMAL(12,2) NOT NULL CHECK (precio_venta >= 0),
-  stock_minimo INT NOT NULL DEFAULT 0 CHECK (stock_minimo >= 0),
-  estado ENUM('activo','inactivo') NOT NULL DEFAULT 'activo',
-  stock INT NOT NULL DEFAULT 0 CHECK (stock >= 0),
-  FOREIGN KEY (id_categoria) REFERENCES categorias(id_categoria) ON DELETE RESTRICT
-) ENGINE=InnoDB;
-
 CREATE TABLE IF NOT EXISTS clientes (
-  id_cliente INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(120) NOT NULL,
-  telefono VARCHAR(255) NULL,
-  correo VARCHAR(255) NULL,
-  direccion VARCHAR(255) NULL
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ usuario_id INT UNSIGNED NOT NULL UNIQUE,
+ telefono VARCHAR(30) NOT NULL DEFAULT '',
+ direccion VARCHAR(500) NOT NULL DEFAULT '',
+ FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 ) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS empleados (
-  id_empleado INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(120) NOT NULL,
-  apellido VARCHAR(120) NOT NULL,
-  puesto VARCHAR(120) NOT NULL,
-  telefono VARCHAR(255) NULL,
-  correo VARCHAR(255) NULL,
-  fecha_ingreso DATE NOT NULL,
-  estado ENUM('activo','inactivo') NOT NULL DEFAULT 'activo'
+CREATE TABLE IF NOT EXISTS categorias (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ nombre VARCHAR(100) NOT NULL UNIQUE,
+ descripcion VARCHAR(500) NOT NULL DEFAULT '',
+ activo BOOLEAN NOT NULL DEFAULT TRUE
 ) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS compras (
- id_compra INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
- id_proveedor INT UNSIGNED NOT NULL,
- id_empleado INT UNSIGNED NOT NULL,
- fecha_compra DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
- total DECIMAL(14,2) NOT NULL DEFAULT 0 CHECK (total >= 0),
- estado ENUM('borrador','confirmada','cancelada') NOT NULL DEFAULT 'borrador',
- clave_solicitud VARCHAR(80) NULL UNIQUE,
- FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor) ON DELETE RESTRICT,
- FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado) ON DELETE RESTRICT
+CREATE TABLE IF NOT EXISTS marcas (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ nombre VARCHAR(100) NOT NULL UNIQUE,
+ descripcion VARCHAR(500) NOT NULL DEFAULT '',
+ activo BOOLEAN NOT NULL DEFAULT TRUE
 ) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS detalle_compras (
- id_detalle_compra INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
- id_compra INT UNSIGNED NOT NULL,
- id_producto INT UNSIGNED NOT NULL,
- cantidad INT NOT NULL CHECK (cantidad > 0),
- costo_unitario DECIMAL(12,2) NOT NULL CHECK (costo_unitario >= 0),
- subtotal DECIMAL(14,2) GENERATED ALWAYS AS (cantidad * costo_unitario) STORED,
- UNIQUE (id_compra, id_producto),
- FOREIGN KEY (id_compra) REFERENCES compras(id_compra) ON DELETE RESTRICT,
- FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE RESTRICT
+CREATE TABLE IF NOT EXISTS productos (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ categoria_id INT UNSIGNED NOT NULL,
+ marca_id INT UNSIGNED NOT NULL,
+ sku VARCHAR(60) NOT NULL UNIQUE,
+ nombre VARCHAR(160) NOT NULL,
+ descripcion TEXT NOT NULL,
+ especificaciones TEXT NOT NULL,
+ imagen VARCHAR(1000) NOT NULL DEFAULT '',
+ precio DECIMAL(12,2) NOT NULL,
+ precio_oferta DECIMAL(12,2) NULL,
+ oferta_inicio DATETIME NULL,
+ oferta_fin DATETIME NULL,
+ destacado BOOLEAN NOT NULL DEFAULT FALSE,
+ activo BOOLEAN NOT NULL DEFAULT TRUE,
+ creado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY (categoria_id) REFERENCES categorias(id),
+ FOREIGN KEY (marca_id) REFERENCES marcas(id),
+ CONSTRAINT ck_precio CHECK (precio > 0),
+ CONSTRAINT ck_oferta CHECK (precio_oferta IS NULL OR (precio_oferta > 0 AND precio_oferta < precio)),
+ CONSTRAINT ck_fechas CHECK ((precio_oferta IS NULL AND oferta_inicio IS NULL AND oferta_fin IS NULL) OR (precio_oferta IS NOT NULL AND oferta_inicio IS NOT NULL AND oferta_fin IS NOT NULL AND oferta_fin > oferta_inicio)),
+ INDEX ix_catalogo (activo, categoria_id, marca_id, precio)
 ) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS ventas (
- id_venta INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
- id_cliente INT UNSIGNED NOT NULL,
- id_empleado INT UNSIGNED NOT NULL,
- fecha_venta DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
- total DECIMAL(14,2) NOT NULL DEFAULT 0 CHECK (total >= 0),
- estado ENUM('borrador','confirmada','cancelada') NOT NULL DEFAULT 'borrador',
- clave_solicitud VARCHAR(80) NULL UNIQUE,
- FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE RESTRICT,
- FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado) ON DELETE RESTRICT
+CREATE TABLE IF NOT EXISTS inventario (
+ producto_id INT UNSIGNED PRIMARY KEY,
+ existencia INT NOT NULL DEFAULT 0,
+ minimo INT NOT NULL DEFAULT 5,
+ FOREIGN KEY (producto_id) REFERENCES productos(id),
+ CONSTRAINT ck_existencia CHECK (existencia >= 0),
+ CONSTRAINT ck_minimo CHECK (minimo >= 0)
 ) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS detalle_ventas (
- id_detalle_venta INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
- id_venta INT UNSIGNED NOT NULL,
- id_producto INT UNSIGNED NOT NULL,
- cantidad INT NOT NULL CHECK (cantidad > 0),
- precio_unitario DECIMAL(12,2) NOT NULL CHECK (precio_unitario >= 0),
- subtotal DECIMAL(14,2) GENERATED ALWAYS AS (cantidad * precio_unitario) STORED,
- UNIQUE (id_venta, id_producto),
- FOREIGN KEY (id_venta) REFERENCES ventas(id_venta) ON DELETE RESTRICT,
- FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE RESTRICT
+CREATE TABLE IF NOT EXISTS pedidos (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ cliente_id INT UNSIGNED NOT NULL,
+ clave VARCHAR(64) NOT NULL,
+ tipo ENUM('pedido','cotizacion') NOT NULL DEFAULT 'pedido',
+ estado ENUM('pendiente','confirmado','preparando','listo','enviado','entregado','cancelado') NOT NULL DEFAULT 'pendiente',
+ entrega ENUM('retiro','domicilio') NOT NULL,
+ direccion VARCHAR(500) NOT NULL DEFAULT '',
+ telefono VARCHAR(30) NOT NULL,
+ nota VARCHAR(1000) NOT NULL DEFAULT '',
+ costo_entrega DECIMAL(12,2) NOT NULL DEFAULT 0,
+ creado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ actualizado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+ UNIQUE KEY ix_idempotencia (cliente_id, clave),
+ INDEX ix_estado (estado, creado),
+ CHECK (costo_entrega >= 0)
 ) ENGINE=InnoDB;
-
+CREATE TABLE IF NOT EXISTS detalle_pedidos (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ pedido_id INT UNSIGNED NOT NULL,
+ producto_id INT UNSIGNED NOT NULL,
+ cantidad INT NOT NULL,
+ precio_unitario DECIMAL(12,2) NOT NULL,
+ FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
+ FOREIGN KEY (producto_id) REFERENCES productos(id),
+ UNIQUE KEY ix_linea (pedido_id, producto_id),
+ CHECK (cantidad > 0 AND precio_unitario > 0)
+) ENGINE=InnoDB;
 CREATE TABLE IF NOT EXISTS movimientos_inventario (
- id_movimiento INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
- id_producto INT UNSIGNED NOT NULL,
- tipo_movimiento ENUM('entrada','salida') NOT NULL,
- cantidad INT NOT NULL CHECK (cantidad > 0),
- fecha_movimiento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
- descripcion VARCHAR(255) NOT NULL,
- clave_solicitud VARCHAR(80) NULL UNIQUE,
- FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE RESTRICT
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ producto_id INT UNSIGNED NOT NULL,
+ usuario_id INT UNSIGNED NOT NULL,
+ pedido_id INT UNSIGNED NULL,
+ cantidad INT NOT NULL,
+ motivo VARCHAR(200) NOT NULL,
+ creado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY (producto_id) REFERENCES productos(id),
+ FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+ FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
+ INDEX ix_movimiento (producto_id, creado),
+ CHECK (cantidad <> 0)
 ) ENGINE=InnoDB;

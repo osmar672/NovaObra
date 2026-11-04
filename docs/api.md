@@ -1,111 +1,50 @@
-# API REST
+# API NovaObra Tienda
 
-Base: `http://127.0.0.1:3001/api`. JSON con Content-Type `application/json`. Respuestas: objeto para un registro, arreglo para listas, `{error: "mensaje"}` ante fallo. 200 lectura/cambio, 201 creación, 204 borrado, 400 validación, 404 inexistente, 409 conflicto, 500 fallo interno sin detalles sensibles.
+Origen local del backend: `http://127.0.0.1:3003/api`; el navegador utiliza el proxy del frontend en 5174. Respuestas JSON; fallos `{ "error": "mensaje" }`. Las escrituras requieren `Content-Type: application/json`, `Origin` igual a `PUBLIC_URL` y `X-NovaObra-Request: 1`. La cookie `novaobra_session` se obtiene al registrar/iniciar sesión, es HttpOnly y no debe copiarse a localStorage.
 
-## Recursos
+| Método y ruta relativa a `/api` | Acceso / contenido |
+| --- | --- |
+| GET `/health`, `/config` | Estado del esquema / datos públicos del negocio |
+| GET `/categorias`, `/marcas` | Catálogos activos |
+| GET `/productos` | Filtros `q`, `categoria`, `marca`, `min`, `max`, `disponible=1`, `ofertas=1`, `destacado=1`, `orden`, `pagina`; 12 por página |
+| GET `/productos/:id` | Producto visible, existencia y precio vigente |
+| POST `/auth/registro` | `nombre`, `email`, `password`; crea siempre cliente |
+| POST `/auth/login` | `email`, `password`; sesión de ocho horas |
+| GET `/auth/yo` | Usuario de la sesión |
+| POST `/auth/logout` | Invalida las sesiones de ese usuario |
+| PUT `/auth/password` | `actual`, `nueva`; invalida sesiones |
+| GET `/pedidos` | Últimos 200 pedidos del propio cliente, con líneas |
+| POST `/pedidos` | Cliente; contrato de creación debajo |
+| GET `/admin/dashboard` | Administrador/empleado; indicadores reales |
+| GET, POST `/admin/productos` | Listar / crear productos |
+| PUT `/admin/productos/:id` | Reemplazar campos editables, no stock |
+| GET, POST `/admin/categorias`, `/admin/marcas` | Listar / crear taxonomías |
+| PUT `/admin/categorias/:id`, `/admin/marcas/:id` | Editar nombre, descripción, estado |
+| GET `/admin/inventario` | Últimos 200 movimientos |
+| POST `/admin/inventario` | `producto_id`, `cantidad` con signo y `motivo`; sin modificar historial |
+| GET `/admin/pedidos`, `/admin/clientes` | Últimos 200 registros |
+| PATCH `/admin/pedidos/:id` | `estado`; transiciones controladas |
+| GET `/admin/usuarios` | Solo administrador; nunca incluye hashes |
+| PATCH `/admin/usuarios/:id` | Solo administrador: `rol_id`, `activo`; no permite cambiar acceso propio |
 
-Para cada uno de `categorias`, `proveedores`, `productos`, `clientes`, `empleados`, `compras`, `ventas`, `detalle_compras`, `detalle_ventas`, `movimientos_inventario`:
-
-| Método | Ruta         | Uso                        |
-| ------ | ------------ | -------------------------- |
-| GET    | /recurso     | Listar                     |
-| GET    | /recurso/:id | Consultar                  |
-| POST   | /recurso     | Crear                      |
-| PUT    | /recurso/:id | Sustituir campos editables |
-| DELETE | /recurso/:id | Eliminar cuando sea válido |
-
-En movimientos, PUT y DELETE de un registro existente responden 409: es un historial inmutable. En compras y ventas solo se editan/eliminan borradores. Los detalles se gestionan dentro del formulario de la operación o mediante sus endpoints individuales, siempre mientras la cabecera sea borrador. GET de una compra o venta devuelve cabecera y detalles de una sola consulta coherente, incluso durante ediciones concurrentes. Los IDs de cabecera de una línea no son editables. Un borrado inválido no es una funcionalidad faltante: protege el historial.
-
-| Método | Ruta                   | Uso                                 |
-| ------ | ---------------------- | ----------------------------------- |
-| POST   | /compras/:id/confirmar | Aplicar entradas                    |
-| POST   | /compras/:id/cancelar  | Revertir o cancelar borrador        |
-| POST   | /ventas/:id/confirmar  | Aplicar salidas                     |
-| POST   | /ventas/:id/cancelar   | Revertir o cancelar borrador        |
-| GET    | /health                | Comprobar MySQL                     |
-| GET    | /dashboard             | Indicadores y movimientos agrupados |
-| GET    | /metadata              | Campos editables de catálogos       |
-
-## Día 1: producto
-
-POST `/productos`:
-
-```json
-{
-  "id_categoria": 1,
-  "codigo": "HER-002",
-  "nombre": "Destornillador",
-  "descripcion": "Plano",
-  "precio_compra": 1000,
-  "precio_venta": 1600,
-  "stock_minimo": 5,
-  "estado": "activo"
-}
-```
-
-Después GET `/productos` o GET `/productos/:id`. PUT requiere todos los campos obligatorios editables; omitir contactos o descripción los deja en null. `stock` no se acepta en altas ni ediciones.
-
-## Compra completa
-
-POST `/compras`:
+Creación de pedido o cotización:
 
 ```json
 {
-  "id_proveedor": 1,
-  "id_empleado": 1,
-  "clave_solicitud": "compra-ejemplo-001",
-  "detalles": [{ "id_producto": 1, "cantidad": 5, "costo_unitario": 2500 }]
+  "clave": "identificador-unico-de-solicitud",
+  "tipo": "pedido",
+  "entrega": "retiro",
+  "telefono": "telefono-del-cliente",
+  "direccion": "",
+  "nota": "",
+  "lineas": [{ "producto_id": 1, "cantidad": 2 }]
 }
 ```
 
-POST `/compras/:id/confirmar` no requiere cuerpo. GET `/compras/:id` incluye detalles. Para venta, usar `id_cliente` y `precio_unitario`. PUT conserva la clave de solicitud original: no permite cambiarla. Al crear, repetir una clave devuelve 409, sin otro registro ni movimientos. Consultar `/compras` o `/ventas` para encontrar la operación con esa clave.
+`clave`: 16–64 letras, números, `_` o `-`, única por cliente. Reenviar la misma clave devuelve el pedido original (200) sin repetir efectos; la creación devuelve 201. No se acepta precio ni costo de entrega como fuente del importe: se consultan en servidor. `tipo=cotizacion` guarda el precio solicitado sin reservar existencias. `entrega=domicilio` exige dirección y configuración `DELIVERY_FEE`. No se procesan pagos.
 
-## Ajuste
+Estados de pedido: `pendiente → confirmado → preparando → listo → entregado` para retiro, o `preparando → enviado → entregado` para domicilio. Puede cancelarse antes de enviado/entregado. Las cotizaciones solo pasan de pendiente a confirmado o cancelado. Una transición repetida al estado actual es idempotente.
 
-POST `/movimientos_inventario`:
+Los productos aceptan `categoria_id`, `marca_id`, `sku`, `nombre`, `descripcion`, `especificaciones`, `imagen` HTTPS, `precio`, `precio_oferta` opcional, `oferta_inicio`, `oferta_fin` UTC ISO, `destacado`, `activo`, `minimo`. El precio promocional exige rango de fechas y ser menor al normal. El alta crea el inventario en cero. Los campos booleanos deben ser JSON boolean y las cantidades enteros.
 
-```json
-{
-  "id_producto": 1,
-  "tipo_movimiento": "entrada",
-  "cantidad": 2,
-  "descripcion": "Conciliación física",
-  "clave_solicitud": "ajuste-ejemplo-001"
-}
-```
-
-Cantidades enteras positivas para líneas y movimientos, umbral entero no negativo. Importes como números JSON con hasta dos decimales, máximo 9999999999.99 por unidad; cantidad máxima 1000000. El almacenamiento DECIMAL limita el total comercial a 999999999999.99. No se permiten campos arbitrarios, fechas inválidas ni claves foráneas inexistentes.
-
-Las listas permiten búsqueda y filtros en el servidor. Sin parámetros de paginación mantienen el arreglo original para compatibilidad. Con `pagina` o `limite` devuelven `{datos,total,pagina,limite,paginas}`; `pagina` inicia en 1, `limite` es 10 por defecto y admite hasta 100.
-
-```text
-GET /api/productos?pagina=1&limite=10&q=martillo&categoria=1&estado=activo
-GET /api/productos?pagina=1&stock=bajo&estado=activo
-GET /api/ventas?pagina=1&estado=confirmada&desde=2026-11-01&hasta=2026-11-30
-GET /api/movimientos_inventario?tipo_movimiento=entrada&q=HER-001
-```
-
-`q` busca códigos, nombres y datos de contacto relacionados; los caracteres `%` y `_` se buscan literalmente. Las fechas son inclusivas según el valor almacenado en MySQL. Se rechazan fechas imposibles, intervalos invertidos, estados inválidos y límites fuera de rango. Las listas incluyen campos como `categoria_nombre`, `cliente_nombre`, `proveedor_nombre`, `empleado_nombre` y `producto_nombre` según el recurso.
-
-## Reportes, reposición, comprobantes y CSV
-
-| Método | Ruta                                        | Resultado                                                       |
-| ------ | ------------------------------------------- | --------------------------------------------------------------- |
-| GET    | /reportes?desde=YYYY-MM-DD&hasta=YYYY-MM-DD | Resumen y productos más vendidos; solo operaciones confirmadas  |
-| GET    | /inventario-bajo                            | Productos activos con stock menor o igual al mínimo             |
-| GET    | /ventas/:id/comprobante                     | Venta coherente, cliente, empleado y líneas con nombres/códigos |
-| GET    | /recurso/exportar.csv                       | CSV de cualquiera de los diez recursos                          |
-| GET    | /reportes/exportar.csv                      | Resumen y productos del reporte                                 |
-| GET    | /inventario-bajo/exportar.csv               | Lista de reposición                                             |
-
-Los CSV también admiten la terminación `/exportar`. El inventario bajo tiene el alias `/inventario/bajo`. Los filtros de la tabla se conservan al exportar; `pagina` y `limite` no recortan el CSV. Se incluye BOM UTF-8, comillas escapadas y protección de cadenas que Excel podría interpretar como fórmulas.
-
-El reporte devuelve `desde`, `hasta`, `resumen`, `mas_vendidos` y `criterio_ganancia`. El resumen contiene `ventas`, `cantidad_ventas`, `compras`, `cantidad_compras`, `costo_estimado` y `ganancia_estimada`. Sin fechas, cubre los últimos treinta días hasta hoy en Costa Rica. La ganancia estima ingresos menos unidades vendidas por `precio_compra` actual: no usa costos históricos ni representa utilidad contable.
-
-La reposición propone `objetivo=stock_minimo+1`, `faltante=objetivo-stock` y `costo_reposicion=faltante*precio_compra`. Acepta búsqueda `q` y `categoria`. No crea compras automáticamente.
-
-El comprobante conserva el estado de la venta, incluso si es borrador o cancelada, y se identifica como documento interno, sin validez de factura electrónica. La interfaz utiliza la impresión del navegador para guardar PDF, sin servicios externos.
-
-## Colecciones Postman
-
-`postman/NovaObra.postman_collection.json` permite explorar los endpoints manualmente. `postman/NovaObra.verificacion.postman_collection.json` ejecuta un recorrido automatizado con comprobaciones explícitas y crea sus propias relaciones. Usar esta última sobre una base de desarrollo desechable: sus operaciones comerciales conservan historial. `postman/NovaObra.mejoras.postman_collection.json` valida las nuevas funciones. El comando con Newman está documentado en `docs/pruebas.md`.
+Fuera de `/api`: `GET /sitemap.xml`, `GET /robots.txt` y el frontend compilado. Los errores de base y contraseñas no se devuelven al navegador. El acceso o registro supera el límite tras 30 solicitudes por IP en 15 minutos; devuelve 429 y `Retry-After`.

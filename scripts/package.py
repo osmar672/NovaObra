@@ -14,9 +14,9 @@ with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as z:
   z.write(p,Path('NovaObra')/rel)
 with zipfile.ZipFile(out) as z:
  assert z.testzip() is None
- assert 'NovaObra/backend/package-lock.json' in z.namelist()
+ assert 'NovaObra/package-lock.json' in z.namelist()
  assert 'NovaObra/INICIAR.bat' in z.namelist()
  assert 'NovaObra/iniciar.mjs' in z.namelist()
- assert 'NovaObra/package-lock.json' in z.namelist()
+ assert 'NovaObra/backend/server.js' in z.namelist()
  assert not any('/node_modules/' in n or n.endswith('/.env') for n in z.namelist())
 print(out)
