@@ -1,20 +1,22 @@
 # Informe de pruebas
 
+Este informe corresponde a la revisión anterior con `novaobra_db`. Para la configuración actual `NovaObra` y el iniciador único, consultar [verificación del inicio](verificacion-inicio.md).
+
 Fecha: 4 de noviembre de 2026. Ejecución real en Linux x86_64, Node.js 24.22.1, Chromium 155 y MySQL 8.0.46/InnoDB. Los binarios MySQL usados en la nube se obtuvieron de Ubuntu y se verificaron mediante firma del índice y SHA-256. No se utilizó Docker ni se agregaron dependencias de aplicación para las mejoras.
 
 ## Resultados de la revisión
 
-| Verificación                        | Resultado                                  | Alcance ejecutado                                                                                                       |
-| ----------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| `npm test`, backend                 | 6 pruebas aprobadas                        | Validación, respuestas HTTP, estados y analizador de respaldos                                                          |
-| `npm run test:integration`, backend | 12 pruebas aprobadas                       | API/MySQL, restricciones, diez tablas, inventario, concurrencia, precisión, reportes, fechas, nombres, CSV y paginación |
-| `npm run test:backup`, backend      | 1 integración aprobada                     | Respaldo y restauración real con clientes MySQL 8 y protecciones del destino                                            |
-| `npm run test:migrations`, backend  | 1 integración aprobada                     | Pasos 001/002, diez tablas, semilla, rollback y protección de registros existentes                                      |
-| `npm run test:ui`, frontend         | 10 escenarios aprobados                    | Flujos anteriores más filtros, paginación, CSV, reportes, reposición y PDF real                                         |
-| Newman, colección de verificación   | 139 solicitudes y 419 aserciones aprobadas | Diez recursos, CRUD, persistencia, estados y errores                                                                    |
-| Newman, colección de mejoras        | 38 solicitudes y 99 aserciones aprobadas   | Reportes, nombres, filtros, CSV, comprobantes y reposición                                                              |
-| `npm run build`, frontend           | Aprobado                                   | Compilación React/Vite                                                                                                  |
-| Arranque con puerto HTTP ocupado    | Aprobado                                   | Termina con código 1 y EADDRINUSE; no anuncia disponibilidad                                                            |
+| Verificación                        | Resultado                                  | Alcance ejecutado                                                                           |
+| ----------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `npm test`, backend                 | 6 pruebas aprobadas                        | Validación, respuestas HTTP, estados y analizador de respaldos                              |
+| `npm run test:integration`, backend | 13 pruebas aprobadas                       | API/MySQL, inventario, concurrencia, reportes, CSV y configuración del instalador           |
+| `npm run test:backup`, backend      | 1 integración aprobada                     | Respaldo y restauración real con clientes MySQL 8 y protecciones del destino                |
+| `npm run test:migrations`, backend  | 2 pruebas aprobadas                        | Pasos 001/002, semilla, rollback, versión MySQL y protección previa de tablas/vistas ajenas |
+| `npm run test:ui`, frontend         | 10 escenarios aprobados                    | Flujos anteriores más filtros, paginación, CSV, reportes, reposición y PDF real             |
+| Newman, colección de verificación   | 139 solicitudes y 419 aserciones aprobadas | Diez recursos, CRUD, persistencia, estados y errores                                        |
+| Newman, colección de mejoras        | 38 solicitudes y 99 aserciones aprobadas   | Reportes, nombres, filtros, CSV, comprobantes y reposición                                  |
+| `npm run build`, frontend           | Aprobado                                   | Compilación React/Vite                                                                      |
+| Arranque con puerto HTTP ocupado    | Aprobado                                   | Termina con código 1 y EADDRINUSE; no anuncia disponibilidad                                |
 
 Los conteos de integración incluyen escenarios superiores y subpruebas del ejecutor de Node. No son un conteo de endpoints. Las dos colecciones Postman sumaron 177 solicitudes y 518 aserciones, sin fallos. Sus informes JSON regenerables se guardaron en `artifacts/` y se excluyen de Git y del ZIP.
 
@@ -90,3 +92,7 @@ Se separaron los modelos, servicios, controladores y rutas de las diez entidades
 Los pasos iniciales 001/002 reutilizan el SQL canónico y se verificaron en una base aislada: creación de diez tablas, semilla coherente, repetición de esquema sin borrar datos, rechazo de una semilla repetida y rollback ante un fallo provocado a mitad de carga. No se agrega una tabla de historial.
 
 Tras la reorganización, se ejecutaron nuevamente la integración MySQL (12/12), respaldo/restauración (1/1), navegador Chromium (10/10) y ambas colecciones Newman (177 solicitudes, 518 aserciones, cero fallos). Las pruebas unitarias/HTTP permanecen en 6/6 y la integración de migraciones en 1/1. La compilación modular de Vite pasó con 64 módulos. Los logs regenerables de esta revisión se guardan bajo `artifacts/estructura-*`.
+
+Se integraron también los cambios nuevos de GitHub para configuración MySQL e inicio en una sola ventana, sin sustituirlos por el instalador anterior. Tras esa integración volvieron a pasar 13 pruebas de integración, 1 de respaldo/restauración, 10 de navegador y las 177 solicitudes Newman (518 aserciones). Las migraciones y el instalador configurables pasaron 3 pruebas combinadas (2 de migraciones y 1 de setup). El valor predeterminado es NovaObra y DB_NAME conserva las instalaciones existentes con otro nombre válido. Los nuevos logs se encuentran en `artifacts/estructura-integrada-*`.
+
+La entrega integrada se extrajo limpia y se instaló con npm ci. Desde esa copia pasaron las 6 pruebas unitarias/HTTP, 13 de integración, 1 de respaldo, 2 de migraciones y la compilación Vite (64 módulos). El iniciador de la copia creó su .env privado, arrancó API en 3002 e interfaz en 5173 con proxy conectado, conservó los registros y terminó correctamente con SIGINT. La validación efectiva sigue siendo Linux; Windows/macOS requieren su propia ejecución.

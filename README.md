@@ -4,32 +4,25 @@ Sistema académico local para Ferretería NovaObra, comercializadora de herramie
 
 ## Inicio rápido
 
-Requisitos: Node.js 22.12 o posterior (verificado en Node 24), npm y MySQL 8.0.16 o posterior. No requiere Docker ni servicios externos. Desde la carpeta extraída `NovaObra_Control`:
+Requisitos: **Node.js 24 LTS con npm** (mínimo 22.12), **MySQL 8.0.16 o posterior iniciado** e Internet para descargar las dependencias en el primer arranque. El usuario MySQL debe existir y tener permisos sobre su base. No requiere Docker.
 
-1. Preparar MySQL y su usuario según [instalación](docs/instalacion.md).
-2. En una terminal:
+Configuración predeterminada: usuario **`NovaObra`**, base de datos **`NovaObra`**, servidor `127.0.0.1:3306`.
 
-```sh
-cd backend
-npm ci
-```
+1. Extraer el ZIP completamente. En Windows, abrir **`INICIAR.bat`** con doble clic.
+2. Escribir la contraseña de MySQL cuando se solicite la primera vez; no se muestra al escribir. Se guarda únicamente en `backend/.env`, excluido de Git y del ZIP.
+3. Esperar el mensaje **`NovaObra lista en http://127.0.0.1:5173`**. El iniciador intenta abrir el navegador; también se puede entrar a esa dirección manualmente.
 
-Copiar `.env.example` a `.env`, completar los datos de MySQL y ejecutar:
+En Linux/macOS, ejecutar `sh iniciar.sh` desde la carpeta del proyecto. En cualquier sistema también se puede usar:
 
 ```sh
-npm run db:setup -- --seed
 npm start
 ```
 
-3. En otra terminal desde la raíz del proyecto:
+Un solo iniciador instala las dependencias bloqueadas, prepara las diez tablas, carga los datos iniciales si todas están vacías e inicia API e interfaz. Los siguientes arranques conservan la configuración y los registros, y reutilizan las dependencias mientras no cambien sus archivos de bloqueo. Mantener la terminal abierta; **Ctrl+C** detiene ambos servicios.
 
-```sh
-cd frontend
-npm ci
-npm run dev
-```
+Para preparar el proyecto sin iniciar servidores: `npm run setup`. Para cambiar conexión o contraseña, editar `backend/.env`. La configuración de ejemplo no incluye secretos. Ver [instalación y errores habituales](docs/instalacion.md).
 
-Abrir `http://127.0.0.1:5173`. API en `http://127.0.0.1:3001/api`. La semilla se carga una sola vez sobre tablas vacías. El instalador no elimina bases existentes.
+Interfaz: `http://127.0.0.1:5173`. API: `http://127.0.0.1:3001/api`. No se requiere login. El instalador no elimina bases existentes ni repite la semilla sobre datos guardados; no migra estructuras de versiones antiguas.
 
 ## Verificaciones
 
@@ -39,7 +32,7 @@ npm test
 npm run test:integration
 ```
 
-La integración exige un usuario MySQL con permiso para crear y eliminar bases temporales `novaobra_test_*`. Usa una base independiente, no elimina `novaobra_db`. Consultar [informe de pruebas](docs/pruebas.md) para los resultados efectivamente ejecutados.
+La integración exige un usuario de pruebas MySQL con permiso para crear y eliminar bases temporales `novaobra_test_*` y `NovaObra_test_*`. Usa bases independientes, no elimina `NovaObra`. Consultar [verificación del iniciador](docs/verificacion-inicio.md) y el [informe de pruebas](docs/pruebas.md).
 
 ```sh
 cd frontend
@@ -63,6 +56,7 @@ Las pruebas de navegador y la colección automatizada Postman usan una base de d
 - `docs/`: análisis, relaciones, diagrama Mermaid, instalación, API, manual y pruebas.
 - `postman/`: colección manual y colección automatizada de verificación para las diez entidades.
 - `scripts/package.py`: genera el ZIP excluyendo credenciales, dependencias y temporales.
+- `iniciar.mjs`, `INICIAR.bat` e `iniciar.sh`: instalación y arranque desde una sola terminal.
 
 ## Mejoras de gestión
 

@@ -1,5 +1,5 @@
-import "dotenv/config";
 import mysql from "mysql2/promise";
+import { databaseSettings } from "../src/config/settings.js";
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -24,18 +24,7 @@ const begin = "-- NOVAOBRA-DATOS-INICIO\n";
 const end = "-- NOVAOBRA-DATOS-FIN\n";
 
 export function settings() {
-  const config = {
-    host: process.env.DB_HOST || "127.0.0.1",
-    port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || "novaobra",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "novaobra_db",
-  };
-  if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(config.database))
-    throw new Error("Nombre de base inválido.");
-  if (!Number.isInteger(config.port) || config.port < 1 || config.port > 65535)
-    throw new Error("Puerto MySQL inválido.");
-  return config;
+  return databaseSettings();
 }
 
 export function connection(config, selectDatabase = true) {
@@ -56,7 +45,7 @@ export async function expectedSchema() {
   ).replaceAll("\r\n", "\n");
   const schema = full
     .replace(/^CREATE DATABASE[^;]+;\s*/i, "")
-    .replace(/^USE\s+novaobra_db;\s*/i, "")
+    .replace(/^USE\s+NovaObra;\s*/i, "")
     .trim();
   if (
     (schema.match(/CREATE TABLE IF NOT EXISTS/g) || []).length !== 10 ||

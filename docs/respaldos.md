@@ -1,6 +1,6 @@
 # Respaldo y restauración
 
-Estas herramientas requieren Node.js, las dependencias del backend y los clientes oficiales `mysql` y `mysqldump` de MySQL 8 accesibles en PATH. También necesitan una cuenta con permisos suficientes sobre la base configurada en `backend/.env`. La aplicación habitual sigue usando novaobra_db.
+Estas herramientas requieren Node.js, las dependencias del backend y los clientes oficiales `mysql` y `mysqldump` de MySQL 8 accesibles en PATH. También necesitan una cuenta con permisos suficientes sobre la base configurada en `backend/.env`. La base predeterminada de esta entrega es `NovaObra`.
 
 ## Crear una copia
 
@@ -44,4 +44,4 @@ npm test
 npm run test:backup
 ```
 
-La integración usa destinos aislados y verifica tablas, filas, relaciones, stock, textos especiales y las protecciones de respaldo/restauración. No necesita alterar novaobra_db.
+La integración usa destinos aislados y verifica tablas, filas, relaciones, stock, textos especiales y las protecciones de respaldo/restauración. No necesita alterar la base habitual `NovaObra`.

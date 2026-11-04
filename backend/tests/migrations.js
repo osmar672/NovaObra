@@ -1,11 +1,19 @@
 // MySQL 8 integration test. DB_USER must be able to create/drop test schemas.
-import "dotenv/config";
 import test from "node:test";
 import assert from "node:assert/strict";
 import mysql from "mysql2/promise";
 import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
+import { databaseSettings } from "../src/config/settings.js";
 import { runMigrations, seedData } from "../migrations/index.js";
+import { assertMysqlVersion } from "../migrations/common.js";
+
+test("versión mínima de MySQL: CHECK disponible y MariaDB rechazada", () => {
+  for (const version of ["8.0.16", "8.0.45", "8.4.8", "9.0.1"])
+    assert.doesNotThrow(() => assertMysqlVersion(version));
+  for (const version of ["5.7.44", "8.0.15", "10.11.6-MariaDB", "desconocida"])
+    assert.throws(() => assertMysqlVersion(version), /MySQL 8.0.16.*MariaDB/);
+});
 
 async function snapshot(connection, database) {
   const [tables] = await connection.query(
@@ -25,17 +33,16 @@ test(
   { timeout: 60000 },
   async () => {
     const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || "127.0.0.1",
-      port: Number(process.env.DB_PORT || 3306),
-      user: process.env.DB_USER || "novaobra",
-      password: process.env.DB_PASSWORD || "",
+      ...databaseSettings(),
+      database: undefined,
       multipleStatements: true,
       dateStrings: true,
     });
     const database = `novaobra_test_migrations_${randomUUID().replaceAll("-", "")}`;
+    const foreignDatabase = database + "_other";
     try {
       const [[version]] = await connection.query("SELECT VERSION() AS version");
-      assert.match(version.version, /^8\./);
+      assert.doesNotThrow(() => assertMysqlVersion(version.version));
       const initial = await runMigrations(connection, { database });
       assert.deepEqual(initial, {
         database,
@@ -107,24 +114,69 @@ test(
       );
       assert.deepEqual(await snapshot(connection, database), populated);
 
-      // The injectable library configuration never broadens the production CLI.
+      const skipped = await runMigrations(connection, {
+        database,
+        seedIfEmpty: true,
+      });
+      assert.deepEqual(skipped.steps, ["001_create_schema"]);
+      assert.deepEqual(await snapshot(connection, database), populated);
+
+      // The same custom DB_NAME is respected by the idempotent startup CLI.
       const cli = spawnSync(
         process.execPath,
-        ["scripts/database.js", "--seed"],
+        ["scripts/database.js", "--seed-if-empty"],
         {
           cwd: new URL("../", import.meta.url),
           env: { ...process.env, DB_NAME: database },
           encoding: "utf8",
         },
       );
-      assert.equal(cli.status, 1);
-      assert.match(cli.stderr, /prepara únicamente novaobra_db/);
+      assert.equal(cli.status, 0, cli.stderr);
+      assert.match(cli.stdout, /Se conservaron los datos existentes/);
+      assert.ok(cli.stdout.includes(`${database} preparada: 10 tablas.`));
       assert.deepEqual(await snapshot(connection, database), populated);
+
+      await connection.query("CREATE DATABASE ??", [foreignDatabase]);
+      await connection.query(
+        "CREATE TABLE ??.datos_propios (id INT PRIMARY KEY)",
+        [foreignDatabase],
+      );
+      await connection.query("INSERT INTO ??.datos_propios VALUES (42)", [
+        foreignDatabase,
+      ]);
+      await assert.rejects(
+        runMigrations(connection, { database: foreignDatabase, seedIfEmpty: true }),
+        /objetos ajenos/,
+      );
+      const [foreignTables] = await connection.query("SHOW TABLES FROM ??", [
+        foreignDatabase,
+      ]);
+      assert.equal(foreignTables.length, 1);
+      const [[foreignRecord]] = await connection.query(
+        "SELECT id FROM ??.datos_propios",
+        [foreignDatabase],
+      );
+      assert.equal(foreignRecord.id, 42);
+      await connection.query("DROP TABLE ??.datos_propios", [foreignDatabase]);
+      await connection.query(
+        "CREATE VIEW ??.categorias AS SELECT 42 AS id_categoria",
+        [foreignDatabase],
+      );
+      await assert.rejects(
+        runMigrations(connection, { database: foreignDatabase }),
+        /objetos ajenos/,
+      );
+      const [foreignViews] = await connection.query("SHOW FULL TABLES FROM ??", [
+        foreignDatabase,
+      ]);
+      assert.equal(foreignViews.length, 1);
+      assert.equal(Object.values(foreignViews[0])[1], "VIEW");
       await assert.rejects(
         runMigrations(connection, { database: "nombre; DROP DATABASE otra" }),
         /nombre de la base de datos no es válido/,
       );
     } finally {
+      await connection.query("DROP DATABASE IF EXISTS ??", [foreignDatabase]);
       await connection.query("DROP DATABASE IF EXISTS ??", [database]);
       await connection.end();
     }

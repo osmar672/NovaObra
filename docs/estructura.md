@@ -51,7 +51,7 @@ Las siguientes rutas son relativas a `backend/src/`. Cada router está montado e
 
 ## Migraciones iniciales
 
-`migrations/001_create_schema.js` crea o verifica el esquema leyendo `database/schema.sql`. `002_seed_data.js` carga `database/seed.sql` únicamente si todas las tablas están vacías. `index.js` ordena ambos pasos y `scripts/database.js` conserva la interfaz de comandos:
+`migrations/001_create_schema.js` comprueba la versión MySQL y que no haya objetos ajenos antes de crear o verificar el esquema leyendo `database/schema.sql`. Respeta el nombre indicado en DB_NAME. `002_seed_data.js` carga `database/seed.sql` únicamente si todas las tablas están vacías. `index.js` ordena ambos pasos y `scripts/database.js` conserva la interfaz de comandos:
 
 ```sh
 cd backend
@@ -64,6 +64,8 @@ Para una instalación vacía con datos de ejemplo:
 ```sh
 npm run db:setup -- --seed
 ```
+
+El iniciador de una sola ventana conserva su opción `--seed-if-empty`: carga datos iniciales solo si la base está vacía y los conserva en los siguientes arranques. `--seed` sigue rechazando una base con registros. La configuración predeterminada remota usa `NovaObra`; una instalación con `DB_NAME=novaobra_db` u otro nombre válido conserva ese nombre y sus datos.
 
 No se agrega una tabla para registrar migraciones, porque el requisito exige exactamente diez. Son pasos iniciales repetibles, no un motor general de cambios ALTER ni un sistema de rollback de versiones. El SQL canónico sigue en `database/`; no se mantienen copias duplicadas del esquema.
 
@@ -118,6 +120,8 @@ Las rutas siguientes son relativas a `frontend/src/`. Cada módulo de entidad ut
 
 ## Ejecución
 
-Desde backend, configurar primero `.env` según `.env.example` con una cuenta MySQL válida. Después ejecutar `npm run db:setup` y `npm start`. Desde otra terminal en frontend, ejecutar `npm ci` y `npm run dev`.
+Se conserva `INICIAR.bat` en Windows y `npm start` desde la raíz para preparar y ejecutar los dos servicios. El iniciador no vuelve a solicitar configuración si ya existe `.env`.
+
+Para el arranque manual desde backend, configurar primero `.env` según `.env.example` con una cuenta MySQL válida. Después ejecutar `npm run db:setup` y `npm start`. Desde otra terminal en frontend, ejecutar `npm ci` y `npm run dev`.
 
 La reorganización de carpetas no crea cuentas MySQL ni cambia contraseñas. Si aparece ER_ACCESS_DENIED_ERROR, hay que revisar el usuario y su clave local siguiendo `docs/instalacion.md`.

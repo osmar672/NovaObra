@@ -7,10 +7,16 @@ export { createSchema, seedData };
 // No bookkeeping table is added: NovaObra keeps its ten application tables.
 export async function runMigrations(
   connection,
-  { database = "novaobra_db", seed = false } = {},
+  { database = "NovaObra", seed = false, seedIfEmpty = false } = {},
 ) {
   const schema = await createSchema(connection, { database });
   const steps = [schema.id];
-  if (seed) steps.push((await seedData(connection, { database })).id);
+  if (seed || seedIfEmpty) {
+    const result = await seedData(connection, {
+      database,
+      ifEmpty: !seed && seedIfEmpty,
+    });
+    if (result.applied) steps.push(result.id);
+  }
   return { database, tables: schema.tables, steps };
 }

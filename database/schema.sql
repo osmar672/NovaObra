@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS novaobra_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS NovaObra CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-USE novaobra_db;
+USE NovaObra;
 
 CREATE TABLE IF NOT EXISTS categorias (
   id_categoria INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

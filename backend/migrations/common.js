@@ -10,7 +10,7 @@ export function validateDatabase(database) {
 }
 
 // The SQL files remain the only definition of the initial schema and seed.
-// A database argument allows integration tests to use an isolated schema.
+// Rewrite only database directives so every configured DB_NAME uses that SQL.
 export async function readSql(step, database) {
   validateDatabase(database);
   if (step !== "schema" && step !== "seed")
@@ -19,7 +19,33 @@ export async function readSql(step, database) {
     new URL(`../../database/${step}.sql`, import.meta.url),
     "utf8",
   );
-  return sql.replaceAll(/\bnovaobra_db\b/g, `\`${database}\``);
+  return sql
+    .replace(
+      /^(\s*CREATE\s+DATABASE\s+IF\s+NOT\s+EXISTS\s+)(?:`[^`]+`|[a-zA-Z][a-zA-Z0-9_]*)(?=\s)/im,
+      (_match, prefix) => `${prefix}\`${database}\``,
+    )
+    .replace(
+      /^(\s*USE\s+)(?:`[^`]+`|[a-zA-Z][a-zA-Z0-9_]*)(?=\s*;)/im,
+      (_match, prefix) => `${prefix}\`${database}\``,
+    );
+}
+
+export function assertMysqlVersion(version) {
+  const numbers = /^(\d+)\.(\d+)\.(\d+)/.exec(version);
+  const [major, minor, patch] = numbers ? numbers.slice(1).map(Number) : [0, 0, 0];
+  if (
+    /MariaDB/i.test(version) ||
+    major < 8 ||
+    (major === 8 && minor === 0 && patch < 16)
+  )
+    throw new Error(
+      "Se requiere MySQL 8.0.16 o posterior; MariaDB no es compatible con esta entrega.",
+    );
+}
+
+export async function verifyMysql(connection) {
+  const [[{ version }]] = await connection.query("SELECT VERSION() AS version");
+  assertMysqlVersion(version);
 }
 
 export async function expectedTables(database) {
@@ -47,4 +73,16 @@ export async function verifyTables(connection, database) {
   )
     throw new Error("Se esperaban exactamente las diez tablas de NovaObra.");
   return expected;
+}
+
+export async function rejectForeignObjects(connection, database) {
+  const expected = await expectedTables(database);
+  const [rows] = await connection.query(
+    "SELECT TABLE_NAME AS name, TABLE_TYPE AS type FROM information_schema.tables WHERE table_schema=?",
+    [database],
+  );
+  if (rows.some((row) => !expected.includes(row.name) || row.type !== "BASE TABLE"))
+    throw new Error(
+      "La base contiene objetos ajenos a NovaObra. No se modificaron sus tablas ni datos.",
+    );
 }
