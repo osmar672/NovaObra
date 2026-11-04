@@ -1,0 +1,19 @@
+{
+  "name": "novaobra-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node --test tests/*.test.js",
+    "test:integration": "node --test tests/integration.js",
+    "db:setup": "node scripts/database.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "mysql2": "^3.15.0",
+    "dotenv": "^17.2.0",
+    "cors": "^2.8.5"
+  }
+}
