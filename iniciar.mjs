@@ -178,10 +178,15 @@ try {
     const port = Number(process.env.PORT || 3001);
     if (!Number.isInteger(port) || port < 1 || port > 65535)
       throw new Error("PORT debe estar entre 1 y 65535 en backend/.env.");
-    await freePort(host, port);
+    const { compatibleApi, identity } = await import("./backend/src/runtime.js");
+    const { databaseSettings } = await import("./backend/src/config/settings.js");
+    const reuse = await compatibleApi(host, port, identity(databaseSettings()));
+    if (!reuse) await freePort(host, port);
     await freePort("127.0.0.1", 5173);
-    const api = launch(process.execPath, ["src/server.js"], join(root, "backend"), true);
-    api.once("error", () => { console.error("No se pudo iniciar la API."); void stop(1); });
+    if (!reuse) {
+      const api = launch(process.execPath, ["src/server.js"], join(root, "backend"), true);
+      api.once("error", () => { console.error("No se pudo iniciar la API."); void stop(1); });
+    } else console.log("Se utilizará el backend compatible que ya está iniciado. Mantén abierta su terminal.");
     await ready(`http://${host}:${port}/api/health`, async (response) => (await response.json()).database === "connected");
     const ui = launch(process.execPath, ["node_modules/vite/bin/vite.js"], join(root, "frontend"), true);
     ui.once("error", () => { console.error("No se pudo iniciar Vite."); void stop(1); });

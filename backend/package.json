@@ -7,7 +7,7 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "test": "node --test tests/*.test.js",
-    "test:integration": "node --test --test-concurrency=1 tests/integration.js tests/features.js tests/setup.integration.js",
+    "test:integration": "node --test --test-concurrency=1 tests/integration.js tests/features.js tests/setup.integration.js tests/startup.integration.js",
     "db:setup": "node scripts/database.js",
     "db:backup": "node scripts/backup.js",
     "db:restore": "node scripts/restore.js",

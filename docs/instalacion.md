@@ -113,3 +113,27 @@ Para respaldar y restaurar, instalar también los clientes oficiales MySQL 8 `my
 El comando `db:setup` ejecuta los pasos de `backend/migrations/` y mantiene `database/schema.sql` y `database/seed.sql` como fuente única. No se agrega una tabla de historial de migraciones. La verificación aislada se ejecuta con `npm run test:migrations`; ver `docs/estructura.md` para el recorrido de modelos, servicios, controladores, rutas y frontend.
 
 Las comprobaciones efectivas se ejecutaron en Linux. Los iniciadores de Windows y macOS se incluyen, pero requieren validación en esos sistemas. Los binarios de MySQL, Node.js y Chromium no se distribuyen en el ZIP.
+
+## Backend y frontend en terminales separadas
+
+Desde la raíz, en la primera terminal:
+
+```powershell
+cd backend
+npm ci
+npm start
+```
+
+Espera `NovaObra API en 127.0.0.1:3001`. El backend prepara las tablas ausentes sin cargar datos de ejemplo ni borrar registros. MySQL debe estar iniciado y la cuenta debe tener permisos para preparar su propia base; si falla el acceso, ejecuta `npm run db:configure` dentro de backend. Una base con tablas ajenas se rechaza.
+
+En otra terminal, desde la raíz:
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+Abre http://127.0.0.1:5173. Mantén la terminal original del backend abierta. Si el mismo backend compatible ya está funcionando, otro `npm start` lo reconoce y termina correctamente; no crea un segundo servidor. El iniciador de la raíz también puede usarlo. No detiene procesos ajenos ni cambia el puerto automáticamente. Una instancia de una versión anterior debe cerrarse con Ctrl+C antes de iniciar la nueva. Estas instrucciones corresponden a NovaObra Control; la tienda tiene su propio README y puerto 5174.
+
+Verificado con MySQL real: preparación de base ausente, diez tablas, segundo arranque sin conflicto y API original respondiendo. Prueba reproducible: `node --test tests/startup.integration.js` con credenciales de pruebas, desde backend; solo utiliza bases temporales `NovaObra_test_start_*`.
