@@ -1,4 +1,4 @@
-// Integration checks run against a new disposable MySQL 8 database, never novaobra_db.
+// Integration checks run against a new disposable MySQL 8 database, never NovaObra.
 import "dotenv/config";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -42,7 +42,7 @@ test("Reportes, comprobantes, inventario y consultas exportables sobre MySQL rea
   const admin = await mysql.createConnection({
     host: process.env.DB_HOST || "127.0.0.1",
     port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || "novaobra",
+    user: process.env.DB_USER || "NovaObra",
     password: process.env.DB_PASSWORD || "",
     multipleStatements: true,
   });
@@ -55,7 +55,7 @@ test("Reportes, comprobantes, inventario y consultas exportables sobre MySQL rea
         new URL("../../database/schema.sql", import.meta.url),
         "utf8",
       )
-    ).replaceAll("novaobra_db", db);
+    ).replaceAll("NovaObra", db);
     await admin.query(schema);
     process.env.DB_NAME = db;
     ({ pool } = await import("../src/config/db.js"));

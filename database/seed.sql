@@ -1,4 +1,4 @@
-USE novaobra_db;
+USE NovaObra;
 START TRANSACTION;
 INSERT INTO categorias (id_categoria,nombre,descripcion) VALUES (1,'Herramientas','Herramientas manuales'),(2,'Construcción','Materiales'),(3,'Electricidad','Material eléctrico'),(4,'Plomería','Tuberías y accesorios');
 INSERT INTO proveedores (id_proveedor,nombre,telefono,correo,direccion) VALUES (1,'Distribuidora Central','22223333','ventas@example.com','San José');

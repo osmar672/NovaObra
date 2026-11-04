@@ -9,7 +9,7 @@ test("API completa e inventario contra MySQL real", async (t) => {
   const admin = await mysql.createConnection({
     host: process.env.DB_HOST || "127.0.0.1",
     port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || "novaobra",
+    user: process.env.DB_USER || "NovaObra",
     password: process.env.DB_PASSWORD || "",
     multipleStatements: true,
   });
@@ -22,7 +22,7 @@ test("API completa e inventario contra MySQL real", async (t) => {
         new URL("../../database/schema.sql", import.meta.url),
         "utf8",
       )
-    ).replaceAll("novaobra_db", db);
+    ).replaceAll("NovaObra", db);
     await admin.query(schema);
     process.env.DB_NAME = db;
     ({ pool } = await import("../src/config/db.js"));
@@ -495,7 +495,7 @@ test("semilla SQL mantiene saldos y totales coherentes en MySQL 8", async () => 
   const c = await mysql.createConnection({
     host: process.env.DB_HOST || "127.0.0.1",
     port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || "novaobra",
+    user: process.env.DB_USER || "NovaObra",
     password: process.env.DB_PASSWORD || "",
     multipleStatements: true,
   });
@@ -506,14 +506,14 @@ test("semilla SQL mantiene saldos y totales coherentes en MySQL 8", async () => 
           new URL("../../database/schema.sql", import.meta.url),
           "utf8",
         )
-      ).replaceAll("novaobra_db", db),
+      ).replaceAll("NovaObra", db),
     );
     const seed = (
       await readFile(
         new URL("../../database/seed.sql", import.meta.url),
         "utf8",
       )
-    ).replaceAll("novaobra_db", db);
+    ).replaceAll("NovaObra", db);
     await c.query(seed);
     const [[p]] = await c.query(
       "SELECT stock FROM productos WHERE id_producto=1",

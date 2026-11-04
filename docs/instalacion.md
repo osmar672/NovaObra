@@ -1,87 +1,101 @@
 # Instalación y ejecución
 
-## Requisitos
+## Inicio en una sola ventana
 
-- Node.js 22.12+ o 24 LTS y npm.
-- MySQL 8.0.16+ (las restricciones CHECK deben estar activas), motor InnoDB.
-- Un servidor MySQL iniciado localmente, normalmente en el puerto 3306.
-- Terminal Bash en Linux/macOS o PowerShell en Windows. Los comandos npm son los mismos.
+Instalar Node.js 24 LTS con npm (mínimo 22.12) y MySQL 8.0.16 o posterior. Iniciar el servidor MySQL antes de abrir el proyecto. MariaDB no sustituye MySQL en esta entrega.
 
-## Preparar MySQL
+La configuración de ejemplo usa **usuario `NovaObra`**, **base `NovaObra`** y **servidor `127.0.0.1:3306`**. El nombre de una conexión guardada en Workbench no siempre coincide con el usuario MySQL: revisar el campo Username de esa conexión si el acceso falla.
 
-En una sesión administrativa de MySQL ejecutar lo siguiente, sustituyendo la contraseña de ejemplo por una propia:
+Extraer todo el ZIP antes de iniciar:
+
+- Windows: doble clic en `INICIAR.bat`.
+- Linux/macOS: desde la carpeta extraída, ejecutar `sh iniciar.sh`.
+- Cualquier sistema: desde la carpeta que contiene el `package.json` raíz, ejecutar `npm start`.
+
+En una copia nueva se solicita una sola vez la contraseña de MySQL, sin mostrarla mientras se escribe. Se crea `backend/.env` local, excluido de Git y del ZIP. Si ese archivo ya existe, se conserva. Para modificar usuario, contraseña, base o puerto, editarlo antes del siguiente inicio.
+
+El iniciador instala dependencias mediante `npm ci` la primera vez o cuando cambia un archivo de bloqueo. Después crea las diez tablas si faltan y carga la semilla únicamente si todas están vacías. Una base con registros conserva sus datos; una base con tablas o vistas ajenas se rechaza sin modificar sus objetos. No borra bases ni migra estructuras antiguas.
+
+Al ver `NovaObra lista en http://127.0.0.1:5173`, abrir esa dirección si el navegador no se abrió automáticamente. Mantener la terminal abierta. Ctrl+C detiene API e interfaz. No se requiere login.
+
+Para instalar y preparar sin iniciar los servidores: `npm run setup`. La primera instalación necesita Internet; las siguientes reutilizan las dependencias instaladas.
+
+## Permisos de MySQL
+
+El usuario indicado debe existir y tener permisos sobre `NovaObra`. Si ya puedes acceder con ese usuario y crear sus tablas, no necesitas crear otra cuenta.
+
+Si aún no existe, un administrador puede ejecutar lo siguiente en MySQL Workbench, reemplazando la contraseña de ejemplo por la local:
 
 ```sql
-CREATE DATABASE IF NOT EXISTS novaobra_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'novaobra'@'127.0.0.1' IDENTIFIED BY 'CAMBIAR_POR_UNA_CLAVE_LOCAL';
-GRANT ALL PRIVILEGES ON novaobra_db.* TO 'novaobra'@'127.0.0.1';
+CREATE DATABASE IF NOT EXISTS NovaObra
+CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'NovaObra'@'127.0.0.1'
+IDENTIFIED BY 'TU_CLAVE_LOCAL';
+GRANT ALL PRIVILEGES ON NovaObra.* TO 'NovaObra'@'127.0.0.1';
 ```
 
-El usuario debe coincidir con la cuenta que MySQL resuelva para conexiones TCP locales. Si tu instalación utiliza `localhost` en sus cuentas, crea esa cuenta en su lugar. No utilices una cuenta administrativa para ejecutar la aplicación habitualmente.
+Si MySQL resuelve la conexión local como `localhost`, usar esa cuenta en lugar de la de `127.0.0.1`. No ejecutar `CREATE USER` si la cuenta ya existe. Los permisos se limitan a la base del proyecto.
 
-Desde `backend/`, instalar con `npm ci`. Copiar `.env.example` a `.env`:
+## Configuración manual opcional
 
-Linux/macOS:
+Desde `backend/`, instalar con `npm ci` y copiar `.env.example` a `.env`:
 
 ```sh
+# Linux/macOS
 cp .env.example .env
 ```
 
-PowerShell:
-
 ```powershell
+# PowerShell
 Copy-Item .env.example .env
 ```
 
-Editar `.env` con DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_NAME=novaobra_db. El ejemplo no contiene credenciales reales. Iniciar esquema y datos:
+Completar `DB_PASSWORD` con la contraseña local. Los valores restantes del ejemplo son:
+
+```env
+HOST=127.0.0.1
+PORT=3001
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=NovaObra
+DB_PASSWORD=
+DB_NAME=NovaObra
+CORS_ORIGIN=http://127.0.0.1:5173
+```
+
+Desde `backend/`:
 
 ```sh
-npm run db:setup -- --seed
+npm run db:setup -- --seed-if-empty
 npm start
 ```
 
-Para refrescar solo el esquema inicial sin semilla: `npm run db:setup`. El script usa `CREATE TABLE IF NOT EXISTS`; no es un sistema de migraciones y no actualiza estructuras de versiones antiguas. No ejecutar la semilla sobre una base con registros. No borrar datos para resolver errores de instalación.
-
-Alternativamente, desde el cliente interactivo MySQL y la raíz del proyecto, usar `SOURCE database/schema.sql;` y después `SOURCE database/seed.sql;`. Este método carga la semilla una sola vez.
-
-Desde `frontend/`, en otra terminal:
+En otra terminal desde `frontend/`:
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Abrir `http://127.0.0.1:5173`. Vite redirige `/api` a Express en 3001. Si cambias el puerto de Express, actualiza el destino en `frontend/vite.config.js`. CORS_ORIGIN corresponde al origen autorizado del navegador. Usa 127.0.0.1 de manera consistente.
+`--seed-if-empty` permite repetir la preparación sin duplicar datos. `--seed` exige todas las tablas vacías y falla si hay registros. Sin opción de semilla, `npm run db:setup` prepara solo las tablas. `DB_NAME` puede cambiarse por otro nombre válido; se respetará en el instalador, la API y los respaldos. Los archivos SQL para importación manual usan `NovaObra`.
 
-## Desarrollo y compilación
+Vite escucha en `127.0.0.1:5173` y toma el destino de la API de `HOST` y `PORT` en `backend/.env`, sin enviar las credenciales al navegador. Si 5173 está ocupado, falla con un mensaje en lugar de cambiar silenciosamente de puerto. `CORS_ORIGIN` debe coincidir con el origen de la interfaz.
 
-Backend: `npm run dev` reinicia al cambiar archivos; `npm start` ejecuta sin observador. Frontend: `npm run build` genera `dist`. El modo `npm run preview` permite inspeccionar la compilación. Para la demostración local conectada a la API usa `npm run dev`.
+## Compilación y pruebas
 
-## Pruebas de integración
+Desde la raíz, `npm test` ejecuta las pruebas unitarias del backend y `npm run build` genera `frontend/dist`. Desde backend, `npm run dev` reinicia la API al cambiar archivos.
 
-El ejecutor crea una base `novaobra_test_<timestamp>` y la elimina al terminar. Configura temporalmente un usuario de pruebas con permisos CREATE, DROP y operaciones sobre esas bases. No cambies las credenciales del usuario de aplicación por las administrativas en archivos versionados. Ejecuta desde backend:
-
-```sh
-npm test
-npm run test:integration
-```
-
-Para usar credenciales distintas en Bash, establece las variables DB_USER y DB_PASSWORD solo en esa terminal sin guardarlas en el historial; en PowerShell utiliza variables de entorno de sesión. Nunca pegues contraseñas en chats ni las incluyas en el ZIP.
+Las integraciones se ejecutan desde backend con `npm run test:integration`. Requieren una cuenta de pruebas separada capaz de crear y eliminar bases temporales `novaobra_test_*` y `NovaObra_test_*`. No amplíes los permisos de la cuenta habitual para ejecutarlas. Para respaldos y pruebas adicionales, consultar [respaldos](respaldos.md) y [verificación del iniciador](verificacion-inicio.md).
 
 ## Solución de problemas
 
-- ECONNREFUSED: iniciar MySQL y revisar host/puerto; no indica una contraseña incorrecta.
-- ER_ACCESS_DENIED_ERROR: revisar cuenta MySQL y contraseña local.
-- 409 al eliminar: hay dependencias; desactivar el registro si tiene estado o conservar su historial.
-- 409 al confirmar: revisar cantidades, stock y estado de productos.
-- 409 al repetir clave: consultar el registro ya creado y no reenviar con otra clave sin revisar.
-- Error de conexión en pantalla: iniciar Express y revisar su conexión a MySQL.
-- Puerto ocupado: detener la instancia propia anterior o configurar otro puerto y su proxy.
+- Node o npm no se reconocen: instalar Node.js 24 LTS con npm y volver a abrir la terminal.
+- `ECONNREFUSED`: iniciar el servicio MySQL y comprobar `DB_HOST` y `DB_PORT`.
+- Acceso denegado: comprobar que `DB_USER` sea el usuario MySQL real y que `DB_PASSWORD` corresponda a esa cuenta. Editar `backend/.env`; no hace falta reinstalar.
+- Permisos de base denegados: revisar que la cuenta pueda crear y utilizar las tablas de `NovaObra`.
+- Puerto ocupado: cerrar la otra instancia propia de NovaObra y volver a iniciar.
+- Error al descargar dependencias: revisar Internet y volver a abrir el iniciador.
+- Una base existente usa otro esquema: conservar sus datos y revisar compatibilidad; el instalador no sustituye una migración.
+- El navegador no se abre: entrar manualmente a `http://127.0.0.1:5173`.
 
-Los binarios MySQL utilizados para verificar en la nube no se distribuyen en el ZIP. Instala MySQL para tu sistema. Windows y macOS requieren validación en su propio entorno.
-
-## Funciones adicionales y respaldo
-
-La interfaz incluye Reportes y comprobantes imprimibles de venta, alertas y lista de reposición, filtros paginados y exportaciones CSV. No requieren otras dependencias de aplicación. Ver `docs/manual.md`.
-
-Para respaldar y restaurar, instalar también los clientes oficiales MySQL 8 `mysql` y `mysqldump`. Las rutas pueden configurarse con MYSQL_PATH y MYSQLDUMP_PATH. Consultar `docs/respaldos.md`: la restauración exige un destino sin tablas ni vistas y no borra bases ocupadas. Ejecutar `npm run test:backup` con una cuenta de pruebas permite verificar el recorrido completo sobre bases temporales.
+Las comprobaciones efectivas se ejecutaron en Linux. Los iniciadores de Windows y macOS se incluyen, pero requieren validación en esos sistemas. Los binarios de MySQL, Node.js y Chromium no se distribuyen en el ZIP.

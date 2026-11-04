@@ -55,7 +55,7 @@ test(
     const config = {
       host: process.env.DB_HOST || "127.0.0.1",
       port: Number(process.env.DB_PORT || 3306),
-      user: process.env.DB_USER || "novaobra",
+      user: process.env.DB_USER || "NovaObra",
       password: process.env.DB_PASSWORD || "",
       multipleStatements: true,
       dateStrings: true,
@@ -87,7 +87,7 @@ test(
             new URL("../../database/schema.sql", import.meta.url),
             "utf8",
           )
-        ).replaceAll("novaobra_db", source),
+        ).replaceAll("NovaObra", source),
       );
       await c.query(
         (
@@ -95,7 +95,7 @@ test(
             new URL("../../database/seed.sql", import.meta.url),
             "utf8",
           )
-        ).replaceAll("novaobra_db", source),
+        ).replaceAll("NovaObra", source),
       );
       const special = "Árbol 'café';\n=SUM(1,2) -- fin /*texto*/ \\ ruta";
       await c.query(
@@ -210,7 +210,7 @@ test(
             new URL("../../database/schema.sql", import.meta.url),
             "utf8",
           )
-        ).replaceAll("novaobra_db", emptySchema),
+        ).replaceAll("NovaObra", emptySchema),
       );
       await c.query(
         "CREATE TRIGGER ??.no_activar AFTER INSERT ON ??.categorias FOR EACH ROW INSERT INTO ??.clientes (nombre) VALUES ('TRIGGER NO EJECUTAR')",

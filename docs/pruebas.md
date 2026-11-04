@@ -1,5 +1,7 @@
 # Informe de pruebas
 
+Este informe corresponde a la revisión anterior con `novaobra_db`. Para la configuración actual `NovaObra` y el iniciador único, consultar [verificación del inicio](verificacion-inicio.md).
+
 Fecha: 4 de noviembre de 2026. Ejecución real en Linux x86_64, Node.js 24.22.1, Chromium 155 y MySQL 8.0.46/InnoDB. Los binarios MySQL usados en la nube se obtuvieron de Ubuntu y se verificaron mediante firma del índice y SHA-256. No se utilizó Docker ni se agregaron dependencias de aplicación para las mejoras.
 
 ## Resultados de la revisión
