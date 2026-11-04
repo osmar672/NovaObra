@@ -28,15 +28,13 @@ export function errorHandler(err, req, res, next) {
           ? 400
           : 500);
   if (status === 500) console.error("Fallo interno:", err.code || err.name);
-  res
-    .status(status)
-    .json({
-      error: err.status
-        ? err.message
-        : status === 409
-          ? "Conflicto: registro duplicado, relación inválida o dependencia existente."
-          : status === 400
-            ? "Datos inválidos."
-            : "Error interno del servidor.",
-    });
+  res.status(status).json({
+    error: err.status
+      ? err.message
+      : status === 409
+        ? "Conflicto: registro duplicado, relación inválida o dependencia existente."
+        : status === 400
+          ? "Datos inválidos."
+          : "Error interno del servidor.",
+  });
 }

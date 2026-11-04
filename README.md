@@ -75,6 +75,12 @@ Las pruebas de navegador y la colección automatizada Postman usan una base de d
 
 Consultar [manual](docs/manual.md), [API](docs/api.md) y [respaldos](docs/respaldos.md). Se mantienen las diez tablas y no se agregan dependencias de aplicación.
 
+## Organización por entidad
+
+El backend separa modelo, servicio, controlador y rutas para cada una de las diez entidades; el frontend organiza páginas, componentes, hooks, servicios y estilos. Las migraciones iniciales se encuentran en `backend/migrations` y reutilizan los scripts SQL canónicos. Consultar [estructura y pasos de realización](docs/estructura.md).
+
+La configuración de MySQL y CORS y los comandos de arranque se mantienen. Para verificar los pasos iniciales en una base temporal: `npm run test:migrations` desde backend.
+
 ## Reglas esenciales
 
 Las operaciones nacen como borradores. Sus detalles se pueden editar hasta confirmar. Confirmar aplica inventario una sola vez; cancelar revierte una operación confirmada una sola vez. Cancelar una compra exige stock suficiente para devolver sus unidades. Un borrador cancelado no altera el stock. Los movimientos son inmutables; los errores se corrigen con entradas o salidas compensatorias.

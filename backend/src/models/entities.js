@@ -1,54 +1,14 @@
+import { categoriaModel } from "./categoriaModel.js";
+import { proveedorModel } from "./proveedorModel.js";
+import { productoModel } from "./productoModel.js";
+import { clienteModel } from "./clienteModel.js";
+import { empleadoModel } from "./empleadoModel.js";
+
+// Public catalog metadata remains compatible with existing API clients.
 export const entities = {
-  categorias: {
-    pk: "id_categoria",
-    fields: {
-      nombre: "text",
-      descripcion: "optional",
-      estado: "active",
-    },
-  },
-  proveedores: {
-    pk: "id_proveedor",
-    fields: {
-      nombre: "text",
-      telefono: "optional",
-      correo: "email",
-      direccion: "optional",
-      estado: "active",
-    },
-  },
-  productos: {
-    pk: "id_producto",
-    fields: {
-      id_categoria: "id",
-      codigo: "text",
-      nombre: "text",
-      descripcion: "optional",
-      precio_compra: "money",
-      precio_venta: "money",
-      stock_minimo: "quantity",
-      estado: "active",
-    },
-  },
-  clientes: {
-    pk: "id_cliente",
-    fields: {
-      nombre: "text",
-      telefono: "optional",
-      correo: "email",
-      direccion: "optional",
-    },
-  },
-  empleados: {
-    pk: "id_empleado",
-    fields: {
-      nombre: "text",
-      apellido: "text",
-      puesto: "text",
-      telefono: "optional",
-      correo: "email",
-      fecha_ingreso: "date",
-      estado: "active",
-    },
-  },
+  categorias: { pk: categoriaModel.pk, fields: categoriaModel.fields },
+  proveedores: { pk: proveedorModel.pk, fields: proveedorModel.fields },
+  productos: { pk: productoModel.pk, fields: productoModel.fields },
+  clientes: { pk: clienteModel.pk, fields: clienteModel.fields },
+  empleados: { pk: empleadoModel.pk, fields: empleadoModel.fields },
 };

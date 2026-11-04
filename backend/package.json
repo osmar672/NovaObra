@@ -11,7 +11,8 @@
     "db:setup": "node scripts/database.js",
     "db:backup": "node scripts/backup.js",
     "db:restore": "node scripts/restore.js",
-    "test:backup": "node --test tests/backup.integration.js"
+    "test:backup": "node --test tests/backup.integration.js",
+    "test:migrations": "node --test tests/migrations.js"
   },
   "dependencies": {
     "express": "^5.1.0",

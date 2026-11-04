@@ -9,6 +9,7 @@ Fecha: 4 de noviembre de 2026. Ejecución real en Linux x86_64, Node.js 24.22.1,
 | `npm test`, backend                 | 6 pruebas aprobadas                        | Validación, respuestas HTTP, estados y analizador de respaldos                                                          |
 | `npm run test:integration`, backend | 12 pruebas aprobadas                       | API/MySQL, restricciones, diez tablas, inventario, concurrencia, precisión, reportes, fechas, nombres, CSV y paginación |
 | `npm run test:backup`, backend      | 1 integración aprobada                     | Respaldo y restauración real con clientes MySQL 8 y protecciones del destino                                            |
+| `npm run test:migrations`, backend  | 1 integración aprobada                     | Pasos 001/002, diez tablas, semilla, rollback y protección de registros existentes                                      |
 | `npm run test:ui`, frontend         | 10 escenarios aprobados                    | Flujos anteriores más filtros, paginación, CSV, reportes, reposición y PDF real                                         |
 | Newman, colección de verificación   | 139 solicitudes y 419 aserciones aprobadas | Diez recursos, CRUD, persistencia, estados y errores                                                                    |
 | Newman, colección de mejoras        | 38 solicitudes y 99 aserciones aprobadas   | Reportes, nombres, filtros, CSV, comprobantes y reposición                                                              |
@@ -46,6 +47,7 @@ npm ci
 npm test
 npm run test:integration
 npm run test:backup
+npm run test:migrations
 ```
 
 El respaldo requiere los clientes oficiales MySQL 8 en PATH o las variables MYSQL_PATH y MYSQLDUMP_PATH. La cuenta habitual limitada a novaobra_db sirve para la aplicación, pero no para crear todas las bases de pruebas.
@@ -80,3 +82,11 @@ Las colecciones crean sus relaciones y conservan historial comercial conciliado.
 El ZIP actualizado pasó la comprobación CRC, inspección de contenido y extracción limpia. Desde esa copia se ejecutaron npm ci en backend y frontend, las 6 pruebas unitarias/HTTP, las 12 de integración, la prueba real de respaldo/restauración y la compilación de producción: todas pasaron. Se confirmó que los archivos coinciden con el proyecto y que se excluyen credenciales, node_modules, Git, reportes temporales y carpetas de respaldos. Las 10 pruebas de navegador se ejecutaron contra los servicios del repositorio; los archivos fuente incluidos en el ZIP son idénticos.
 
 No se ha verificado Windows o macOS ni se tiene acceso a la computadora de presentación. No se hizo una prueba de carga ni un despliegue público. Las pruebas son representativas de los flujos solicitados, no cobertura exhaustiva. El margen de los reportes es una estimación a costo actual; los comprobantes son internos y no sustituyen una factura electrónica. Se mantienen exactamente las diez tablas y la ausencia de autenticación solicitada.
+
+## Verificación de la reorganización por entidades
+
+Se separaron los modelos, servicios, controladores y rutas de las diez entidades; la API conserva sus endpoints y la lógica transaccional. El frontend se distribuye en App, páginas, componentes, hooks, servicios y estilos. La revisión de imports confirmó módulos locales conectados y la eliminación de los archivos monolíticos anteriores. El mapa de archivos está en `docs/estructura.md`.
+
+Los pasos iniciales 001/002 reutilizan el SQL canónico y se verificaron en una base aislada: creación de diez tablas, semilla coherente, repetición de esquema sin borrar datos, rechazo de una semilla repetida y rollback ante un fallo provocado a mitad de carga. No se agrega una tabla de historial.
+
+Tras la reorganización, se ejecutaron nuevamente la integración MySQL (12/12), respaldo/restauración (1/1), navegador Chromium (10/10) y ambas colecciones Newman (177 solicitudes, 518 aserciones, cero fallos). Las pruebas unitarias/HTTP permanecen en 6/6 y la integración de migraciones en 1/1. La compilación modular de Vite pasó con 64 módulos. Los logs regenerables de esta revisión se guardan bajo `artifacts/estructura-*`.
