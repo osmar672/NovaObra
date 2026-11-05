@@ -83,7 +83,7 @@ test(
         await page.goto(f.config.publicUrl);
         await page
           .getByRole("heading", {
-            name: "Grandes proyectos. Buenas herramientas.",
+            name: "Tu próxima gran obra empieza aquí.",
           })
           .waitFor();
         await page
@@ -159,7 +159,7 @@ test(
         assert.equal(stock.existencia, 8);
         await page.goto(f.config.publicUrl + "/admin");
         await page
-          .getByText("No tienes permiso para gestionar estos registros.", {exact:true})
+          .getByText("No tienes permiso para acceder a este espacio. El panel está reservado al equipo autorizado de NovaObra.", {exact:true})
           .waitFor();
       });
       await step(
@@ -268,7 +268,7 @@ test(
           await page.goto(f.config.publicUrl);
           await page
             .getByRole("heading", {
-              name: "Grandes proyectos. Buenas herramientas.",
+              name: "Tu próxima gran obra empieza aquí.",
             })
             .waitFor();
           await page.screenshot({

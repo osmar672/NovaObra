@@ -4,6 +4,8 @@ import { useData } from "../hooks/useData.js";
 import { useShop } from "../context/ShopContext.jsx";
 import { money, productPath } from "../services/api.js";
 import { Meta, ProductImage, Feedback } from "../components/UI.jsx";
+import {productDescription} from '../services/presentation.js';
+import {Icon} from '../components/Visuals.jsx';
 export default function Product() {
   const { id } = useParams(),
     state = useData(`/productos/${id}`, { poll: true }),
@@ -27,7 +29,7 @@ export default function Product() {
       <Feedback {...state} />
       {p && (
         <>
-          <Meta title={p.nombre} description={p.descripcion.slice(0, 160)} />
+          <Meta title={p.nombre} description={productDescription(p).slice(0, 160)} />
           <script type="application/ld+json">
             {JSON.stringify({
               "@context": "https://schema.org",
@@ -64,12 +66,12 @@ export default function Product() {
                 {money(p.precio_actual)}{" "}
                 {p.precio_actual < p.precio && <del>{money(p.precio)}</del>}
               </div>
-              <p className="stock">
+              <p className={`stock ${p.existencia>0?"in-stock":"out-of-stock"}`}>
                 {p.existencia
                   ? `${p.existencia} unidades disponibles`
                   : "Actualmente agotado"}
               </p>
-              <p className="prewrap">{p.descripcion}</p>
+              <p className="prewrap detail-description">{productDescription(p)}</p>
               <div className="button-row">
                 <button disabled={!p.existencia} onClick={() => add(p)}>
                   Agregar al carrito +
@@ -87,6 +89,7 @@ export default function Product() {
                   Compartir
                 </button>
               </div>
+              <div className="product-benefits"><span><Icon name="box"/> Retiro en tienda</span><span><Icon name="list"/> Solicita tu cotización</span></div>
               <h2>Especificaciones</h2>
               <p className="prewrap">
                 {p.especificaciones ||
