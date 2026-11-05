@@ -33,6 +33,20 @@ test('Día 2 en navegador: rutas protegidas, ocho vistas, CRUD, relaciones y exp
   await page.getByLabel('categoria id',{exact:true}).waitFor();
   assert.ok(await page.getByLabel('categoria id',{exact:true}).locator('option').count()>1);assert.ok(await page.getByLabel('marca id',{exact:true}).locator('option').count()>1);
   const [[admin]]=await f.pool.query("SELECT id,version_sesion FROM usuarios WHERE email='admin@example.test'");
+  await f.pool.execute('INSERT INTO clientes (usuario_id) VALUES (?)',[admin.id]);
+  await f.pool.execute('UPDATE inventario SET existencia=10 WHERE producto_id=1');
+  await page.goto(f.config.publicUrl+'/gestion/pedidos');await page.getByRole('button',{name:'Crear registro'}).click();
+  await page.getByLabel('cliente id',{exact:true}).waitFor();
+  const [[profile]]=await f.pool.execute('SELECT id FROM clientes WHERE usuario_id=?',[admin.id]);
+  await page.getByLabel('cliente id',{exact:true}).selectOption(String(profile.id));await page.getByLabel('telefono',{exact:true}).fill('123');
+  const requestKey=await page.getByLabel('clave',{exact:true}).inputValue();assert.ok(requestKey.length>=16);
+  await page.route('**/api/pedidos',async route=>{if(route.request().method()==='POST'){await route.fetch();await route.abort('failed');}else await route.continue();});
+  await page.getByRole('button',{name:'Guardar',exact:true}).click();await page.getByRole('alert').filter({hasText:'No hay conexión'}).waitFor();
+  assert.equal(await page.getByLabel('clave',{exact:true}).inputValue(),requestKey);
+  await page.unroute('**/api/pedidos');await page.getByRole('button',{name:'Guardar',exact:true}).click();await page.getByRole('status').filter({hasText:'Cambios guardados.'}).waitFor();
+  assert.equal((await f.pool.execute('SELECT COUNT(*) AS n FROM pedidos WHERE clave=?',[requestKey]))[0][0].n,1);
+  assert.equal((await f.pool.execute('SELECT existencia FROM inventario WHERE producto_id=1'))[0][0].existencia,9);
+
   const expiring=jwt.sign({v:admin.version_sesion},f.config.secret,{algorithm:'HS256',subject:String(admin.id),issuer:'NovaObra',audience:'NovaObra-client',expiresIn:3});
   await page.evaluate(token=>sessionStorage.setItem('novaobra-jwt',token),expiring);await page.goto(f.config.publicUrl+'/gestion/categorias');await page.getByRole('heading',{name:'Iniciar sesión',exact:true}).waitFor({timeout:8000});
   assert.equal(await page.evaluate(()=>sessionStorage.getItem('novaobra-jwt')),null);

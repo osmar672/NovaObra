@@ -68,8 +68,9 @@ Las integraciones se ejecutaron con `NOVAOBRA_TEST_ADMIN_FILE` apuntando a un JS
 3. Los selectores envueltos en etiquetas necesitaban un nombre accesible explícito para ser identificados sin ambigüedad. Se añadieron `aria-label` coherentes y se verificaron sus opciones.
 4. Se evitó que respuestas 401 de una sesión anterior limpien un JWT recién iniciado. El cliente comprueba el token utilizado por cada petición antes de invalidar la sesión actual.
 5. Tras eliminar un inventario vacío, la gestión debe poder seguir consultando el producto existente. Se conservó el catálogo público filtrado para clientes y se utilizó LEFT JOIN en las lecturas administrativas.
-6. Se preservó el inventario al crear, editar y eliminar detalles de pedidos pendientes. Una prueba nueva confirmó reservas, compensaciones, cancelación e inmutabilidad de movimientos ligados a pedidos.
-7. Las pruebas de navegador antiguas se adaptaron a la nueva autenticación previa al catálogo y al redirect explícito tras logout; se conservaron sus comprobaciones de stock, pedidos y móvil.
+6. La pantalla de pedidos conserva una clave de solicitud por formulario. Chromium simuló una respuesta de red perdida después de guardar en MySQL: el reintento dejó un solo pedido y una sola reserva.
+7. Se preservó el inventario al crear, editar y eliminar detalles de pedidos pendientes. Una prueba nueva confirmó reservas, compensaciones, cancelación e inmutabilidad de movimientos ligados a pedidos.
+8. Las pruebas de navegador antiguas se adaptaron a la nueva autenticación previa al catálogo y al redirect explícito tras logout; se conservaron sus comprobaciones de stock, pedidos y móvil.
 
 Los fallos anteriores se reprodujeron en pruebas y se corrigieron antes de registrar los resultados finales. No se eliminaron aserciones para aceptar errores funcionales.
 
