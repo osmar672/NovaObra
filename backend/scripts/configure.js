@@ -105,7 +105,7 @@ try {
   await rename(tempPath, envPath);
   success = true;
   console.log(
-    "Tienda preparada: 10 tablas y una cuenta MySQL propia. La clave de root no se guardó.",
+    "Tienda preparada: 11 tablas y una cuenta MySQL propia. La clave de root no se guardó.",
   );
   console.log(
     "Crea tu administrador web con npm run admin:create; luego ejecuta npm start.",

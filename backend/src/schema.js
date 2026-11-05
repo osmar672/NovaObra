@@ -10,6 +10,7 @@ export const tables = [
   "pedidos",
   "productos",
   "roles",
+  "sesiones_refresh",
   "usuarios",
 ];
 export async function verifySchema(pool, database) {
@@ -18,9 +19,9 @@ export async function verifySchema(pool, database) {
     [database],
   );
   check(
-    rows.length === 10 &&
+    rows.length === 11 &&
       rows.every((r, i) => r.name === tables[i] && r.type === "BASE TABLE"),
-    "Faltan las diez tablas de la tienda. Ejecuta npm run db:setup desde la raíz del proyecto y comprueba DB_NAME.",
+    "Faltan tablas de la tienda o de sesiones. Ejecuta npm run db:setup desde la raíz del proyecto y comprueba DB_NAME.",
     503,
   );
 }

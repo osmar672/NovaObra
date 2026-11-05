@@ -19,7 +19,9 @@
     "db:configure": "node backend/scripts/configure.js",
     "test:postman": "node --test tests/postman.js",
     "postinstall": "node tests/apply-security-patches.cjs",
-    "audit:deps": "npm audit && npm audit --omit=dev"
+    "audit:deps": "npm audit && npm audit --omit=dev",
+    "https:setup": "node backend/scripts/https.js",
+    "test:https": "node --test tests/https.js"
   },
   "dependencies": {
     "dotenv": "^17.2.0",

@@ -2,25 +2,29 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import jwt from 'jsonwebtoken';
 import {fixture,available} from './helpers.js';
-test('Cookies reales: restauración sin renovar JWT, CSRF, revocación y logout', {skip:!available,timeout:20000},async()=>{
- const f=await fixture();
- async function restore(cookie,{origin=f.config.publicUrl,header=true}={}){
-  const headers={'Content-Type':'application/json'};
-  if(cookie)headers.Cookie=cookie;if(origin)headers.Origin=origin;if(header)headers['X-NovaObra-Request']='1';
-  const r=await fetch(f.base+'/api/auth/session',{method:'POST',headers,body:'{}'});
-  return {status:r.status,body:await r.json(),headers:r.headers};
- }
+import {refreshHash} from '../backend/src/models/sesion.js';
+import {setup} from '../backend/src/schema.js';
+test('Refresh: rotación, hashes, CSRF, expiración, revocación y migración conservadora',{skip:!available,timeout:20000},async()=>{
+ const f=await fixture({overrides:{accessTokenSeconds:1}});
+ const refresh=async(cookie,opts={})=>{const headers={'Content-Type':'application/json',Origin:opts.origin??f.config.publicUrl,'X-NovaObra-Request':'1',Cookie:cookie||''};if(opts.noHeader)delete headers['X-NovaObra-Request'];const r=await fetch(f.base+'/api/auth/refresh',{method:'POST',headers,body:'{}'});return{status:r.status,body:await r.json(),cookie:r.headers.getSetCookie()[0]?.split(';')[0]};};
  try{
-  const login=await f.login('admin@example.test'),cookie=login.cookie,token=login.body.token;
-  const restored=await restore(cookie);assert.equal(restored.status,200);assert.equal(restored.body.token,token);assert.equal(restored.headers.get('set-cookie'),null);
-  assert.equal(jwt.decode(restored.body.token).exp,jwt.decode(token).exp);assert.ok(!('password_hash' in restored.body.usuario));
-  const cookieOnly=await fetch(f.base+'/api/categorias',{headers:{Cookie:cookie}});assert.equal(cookieOnly.status,401);assert.deepEqual(await cookieOnly.json(),{error:'No autorizado'});
-  assert.equal((await f.request('/api/categorias',{token:restored.body.token})).status,200);
-  for(const opts of [{origin:'https://ajeno.example'},{origin:null},{header:false}])assert.equal((await restore(cookie,opts)).status,403);
-  for(const value of [undefined,'novaobra_session=alterado','novaobra_session=%ZZ']){const rejected=await restore(value);assert.equal(rejected.status,401);assert.match(rejected.headers.get('set-cookie'),/Expires=Thu, 01 Jan 1970/);}
-  const expired=jwt.sign({v:0},f.config.secret,{algorithm:'HS256',subject:String(login.body.usuario.id),issuer:'NovaObra',audience:'NovaObra-client',expiresIn:-1});
-  assert.equal((await restore('novaobra_session='+expired)).status,401);
-  const logout=await f.request('/api/auth/logout',{method:'POST',body:{},token});assert.equal(logout.status,200);assert.match(logout.headers.get('set-cookie'),/novaobra_session=;/);
-  assert.equal((await restore(cookie)).status,401);assert.equal((await f.request('/api/auth/me',{token})).status,401);
+  await f.pool.query('DROP TABLE sesiones_refresh');await setup(f.admin,f.database);
+  assert.ok((await f.pool.query('SELECT id FROM productos'))[0].length);
+  let login=await f.login('admin@example.test');let cookie=login.cookie;
+  const raw=cookie.split('=')[1],[[row]]=await f.pool.query('SELECT * FROM sesiones_refresh');assert.equal(row.token_hash,refreshHash(raw));assert.ok(!JSON.stringify(row).includes(raw));
+  assert.equal(jwt.decode(login.body.token).exp-jwt.decode(login.body.token).iat,1);
+  for(const opts of [{origin:'https://evil.test'},{noHeader:true}])assert.equal((await refresh(cookie,opts)).status,403);
+  assert.equal((await fetch(f.base+'/api/categorias',{headers:{Cookie:cookie}})).status,401);
+  await new Promise(r=>setTimeout(r,1100));assert.equal((await f.request('/api/auth/me',{token:login.body.token})).status,401);
+  const renewed=await refresh(cookie);assert.equal(renewed.status,200);assert.notEqual(renewed.cookie,cookie);assert.notEqual(renewed.body.token,login.body.token);
+  const [[active]]=await f.pool.query('SELECT expira FROM sesiones_refresh WHERE consumido IS NULL');assert.equal(+active.expira,+row.expira);
+  assert.equal((await f.request('/api/auth/me',{token:renewed.body.token})).status,200);
+  assert.equal((await refresh(cookie)).status,401);assert.equal((await refresh(renewed.cookie)).status,401);assert.equal((await f.request('/api/auth/me',{token:renewed.body.token})).status,401);
+  login=await f.login('admin@example.test');const concurrent=await Promise.all([refresh(login.cookie),refresh(login.cookie)]);assert.deepEqual(concurrent.map(r=>r.status).sort(),[200,401]);
+  assert.equal((await refresh(concurrent.find(r=>r.status===200).cookie)).status,401);
+  login=await f.login('admin@example.test');await f.pool.query('UPDATE sesiones_refresh SET expira=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND)');assert.equal((await refresh(login.cookie)).status,401);
+  login=await f.login('admin@example.test');await f.pool.execute('UPDATE usuarios SET activo=0 WHERE id=?',[login.body.usuario.id]);assert.equal((await refresh(login.cookie)).status,401);await f.pool.execute('UPDATE usuarios SET activo=1 WHERE id=?',[login.body.usuario.id]);
+  login=await f.login('admin@example.test');const logout=await fetch(f.base+'/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json',Origin:f.config.publicUrl,'X-NovaObra-Request':'1',Cookie:login.cookie},body:'{}'});assert.equal(logout.status,200);assert.match(logout.headers.get('set-cookie'),/novaobra_refresh=;/);assert.equal((await refresh(login.cookie)).status,401);
+  login=await f.login('admin@example.test');assert.equal((await f.request('/api/auth/password',{method:'PUT',token:login.body.token,body:{actual:f.password,nueva:'Clave nueva segura 123456'}})).status,200);assert.equal((await refresh(login.cookie)).status,401);
  }finally{await f.close();}
 });

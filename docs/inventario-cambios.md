@@ -124,3 +124,7 @@ Cada archivo siguiente responde al alcance confirmado. Los cambios mínimos se d
 | Creado | `tests/apply-security-patches.cjs` | Instalación reproducible de parches | npm postinstall y patch-package | npm ci completo y --omit=dev |
 | Creado | `tests/newman-compat.test.js` | Regresiones de dependencias corregidas | SDK, CSV y Newman | Dos pruebas ejecutables |
 | Creado | `docs/vulnerabilidades.md` | Análisis de las 19 entradas y solución | Auditorías y archivo de bloqueo | npm run audit:deps |
+
+## Ampliación autorizada: refresh y HTTPS
+
+Se modifica autenticación de backend/React conservando models/controllers/routes/middlewares. Se añade models/sesion.js, tabla sesiones_refresh (once tablas totales), renovación con rotación y detección de reutilización. Se añaden backend/scripts/https.js, TLS nativo, redirección, deploy/Caddyfile, test:https y docs/jwt.md. Se actualizan README, contrato API y diagrama. El iniciador admite HTTPS sirviendo React compilado. Los certificados y claves privadas se excluyen del ZIP/Git. Continúan los ocho CRUD y permisos existentes.

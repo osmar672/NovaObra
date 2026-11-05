@@ -96,3 +96,16 @@ erDiagram
   pedidos ||--o{ movimientos_inventario : "pedido_id"
 %% Unicidad compuesta real: pedidos(cliente_id, clave); detalle_pedidos(pedido_id, producto_id).
 %% Usuario del contrato: correo=email, fechaCreacion=creado; password se almacena como password_hash.
+
+  sesiones_refresh {
+    char id PK
+    int usuario_id FK
+    char familia
+    char token_hash UK
+    int version_sesion
+    timestamp creado
+    datetime expira
+    datetime consumido
+    datetime revocado
+  }
+  usuarios ||--o{ sesiones_refresh : "usuario_id"

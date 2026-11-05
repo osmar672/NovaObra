@@ -107,3 +107,19 @@ CREATE TABLE IF NOT EXISTS movimientos_inventario (
  INDEX ix_movimiento (producto_id, creado),
  CHECK (cantidad <> 0)
 ) ENGINE=InnoDB;
+
+-- Migración aditiva de autenticación: las diez tablas anteriores se conservan.
+CREATE TABLE IF NOT EXISTS sesiones_refresh (
+ id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+ usuario_id INT UNSIGNED NOT NULL,
+ familia CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+ token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL UNIQUE,
+ version_sesion INT UNSIGNED NOT NULL,
+ creado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ expira DATETIME NOT NULL,
+ consumido DATETIME NULL,
+ revocado DATETIME NULL,
+ FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+ INDEX ix_refresh_familia (familia),
+ INDEX ix_refresh_expira (expira)
+) ENGINE=InnoDB;

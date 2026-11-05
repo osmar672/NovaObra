@@ -39,7 +39,7 @@ test(
     });
     try {
       await t.test(
-        "Diez tablas, relaciones y preparación repetible sin pérdida",
+        "Once tablas, relaciones y preparación repetible sin pérdida",
         async () => {
           await verifySchema(pool, f.database);
           const [[before]] = await pool.query(
@@ -581,7 +581,7 @@ test(
             child.on("close", (code) => resolve({ code, output }));
           });
           assert.equal(result.code, 1);
-          assert.match(result.output, /Faltan las diez tablas/);
+          assert.match(result.output, /Faltan tablas/);
           assert.match(result.output, /npm run db:setup/);
           await pool.query("DROP TABLE ajena_startup");
           assert.doesNotMatch(result.output, /NovaObra Tienda API en/);

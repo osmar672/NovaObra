@@ -39,6 +39,8 @@ export function createApp(pool, config) {
   const app = express(),
     access = auth(pool, config);
   app.disable("x-powered-by");
+  if(config.trustProxy)app.set('trust proxy','loopback');
+  if(config.production)app.use((req,res,next)=>req.secure?next():res.status(400).json({error:'Se requiere HTTPS.'}));
   app.use('/api', (req,res,next) => {
     if (req.method==='OPTIONS') return next();
     if (/^\/(auth|health|config)(?:\/|$)/.test(req.path)) return next();

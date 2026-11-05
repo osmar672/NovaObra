@@ -17,14 +17,18 @@ test('Día 2 en navegador: rutas protegidas, ocho vistas, CRUD, relaciones y exp
   await page.goto(f.config.publicUrl+'/gestion/categorias');await page.getByRole('heading',{name:'Iniciar sesión',exact:true}).waitFor();
   await page.getByLabel('Correo',{exact:true}).fill('admin@example.test');await page.getByLabel('Contraseña',{exact:true}).fill(f.password);await page.getByRole('button',{name:'Entrar',exact:true}).click();
   await page.getByRole('heading',{name:'Gestión de Categorías'}).waitFor();
-  const cookie=(await page.context().cookies()).find(c=>c.name==='novaobra_session');
+  const cookie=(await page.context().cookies()).find(c=>c.name==='novaobra_refresh');
   assert.ok(cookie?.httpOnly);assert.equal(cookie.sameSite,'Lax');
   assert.equal(await page.evaluate(()=>sessionStorage.getItem('novaobra-jwt')),null);
-  assert.equal(await page.evaluate(()=>document.cookie.includes('novaobra_session=')),false);
-  const restored=page.waitForResponse(r=>r.url().endsWith('/api/auth/session')&&r.request().method()==='POST');
+  assert.equal(await page.evaluate(()=>document.cookie.includes('novaobra_refresh=')),false);
+  const restored=page.waitForResponse(r=>r.url().endsWith('/api/auth/refresh')&&r.request().method()==='POST');
   await page.reload();assert.equal((await restored).status(),200);
   await page.getByRole('heading',{name:'Gestión de Categorías'}).waitFor();
   assert.equal(await page.evaluate(()=>sessionStorage.getItem('novaobra-jwt')),null);
+  let refreshes=0;const renewCount=r=>{if(r.url().endsWith('/api/auth/refresh'))refreshes++;};page.on('request',renewCount);
+  const seen=new Set();await page.route('**/api/*',async route=>{const path=new URL(route.request().url()).pathname;if(['/api/categorias','/api/marcas'].includes(path)&&!seen.has(path)){seen.add(path);await route.fulfill({status:401,contentType:'application/json',body:'{"error":"No autorizado"}'});}else await route.continue();});
+  await page.evaluate(async()=>{const {api}=await import('/src/services/api.js');await Promise.all([api('/categorias'),api('/marcas')]);});
+  assert.equal(refreshes,1);page.off('request',renewCount);await page.unroute('**/api/*');
   await page.getByRole('button',{name:'Crear registro'}).click();await page.getByLabel('nombre',{exact:true}).fill('Categoría navegador Día2');await page.getByLabel('descripcion',{exact:true}).fill('Persistencia real');await page.getByRole('button',{name:'Guardar',exact:true}).click();
   const row=page.getByRole('row').filter({hasText:'Categoría navegador Día2'});await row.waitFor();
   const [[stored]]=await f.pool.query('SELECT id FROM categorias WHERE nombre=?',['Categoría navegador Día2']);assert.ok(stored.id);
@@ -55,13 +59,13 @@ test('Día 2 en navegador: rutas protegidas, ocho vistas, CRUD, relaciones y exp
   assert.equal((await f.pool.execute('SELECT COUNT(*) AS n FROM pedidos WHERE clave=?',[requestKey]))[0][0].n,1);
   assert.equal((await f.pool.execute('SELECT existencia FROM inventario WHERE producto_id=1'))[0][0].existencia,9);
 
-  const expiring=jwt.sign({v:admin.version_sesion},f.config.secret,{algorithm:'HS256',subject:String(admin.id),issuer:'NovaObra',audience:'NovaObra-client',expiresIn:3});
-  await page.context().addCookies([{name:'novaobra_session',value:expiring,url:f.config.publicUrl,httpOnly:true,sameSite:'Lax'}]);await page.goto(f.config.publicUrl+'/gestion/categorias');await page.getByRole('heading',{name:'Iniciar sesión',exact:true}).waitFor({timeout:8000});
+  await f.pool.execute('UPDATE usuarios SET version_sesion=version_sesion+1 WHERE id=?',[admin.id]);
+  await page.goto(f.config.publicUrl+'/gestion/categorias');await page.getByRole('heading',{name:'Iniciar sesión',exact:true}).waitFor({timeout:8000});
   assert.equal(await page.evaluate(()=>sessionStorage.getItem('novaobra-jwt')),null);
   await page.getByLabel('Correo',{exact:true}).fill('admin@example.test');await page.getByLabel('Contraseña',{exact:true}).fill(f.password);await page.getByRole('button',{name:'Entrar',exact:true}).click();
   await page.getByRole('heading',{name:'Gestión de Categorías',exact:true}).waitFor();
   await page.goto(f.config.publicUrl+'/cuenta');await page.getByRole('button',{name:'Cerrar sesión',exact:true}).click();await page.getByRole('heading',{name:'Iniciar sesión',exact:true}).waitFor();
-  assert.equal((await page.context().cookies()).some(c=>c.name==='novaobra_session'),false);
+  assert.equal((await page.context().cookies()).some(c=>c.name==='novaobra_refresh'),false);
   assert.deepEqual(errors,[]);
  }finally{if(browser)await browser.close();if(vite&&vite.exitCode===null){const done=once(vite,'exit');vite.kill('SIGTERM');await done;}await f.close();}
 });

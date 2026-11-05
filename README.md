@@ -1,6 +1,6 @@
 # NovaObra Tienda — Mini Proyecto 1, Día 2
 
-Tienda existente de ferretería con Node.js/Express, React/Vite y MySQL 8. Se conservan las diez tablas y los datos del modelo actual. La revisión añade JWT estándar, los endpoints de autenticación del PDF y los cinco endpoints de las ocho entidades empresariales. No incluye la investigación académica excluida por el usuario.
+Tienda existente de ferretería con Node.js/Express, React/Vite y MySQL 8. Se conservan las diez tablas originales y sus datos; se añade `sesiones_refresh` para renovar y revocar sesiones. La revisión añade JWT estándar, los endpoints de autenticación del PDF y los cinco endpoints de las ocho entidades empresariales. No incluye la investigación académica excluida por el usuario.
 
 ## Instalación y ejecución
 
@@ -15,7 +15,7 @@ npm run admin:create
 npm start
 ```
 
-`db:configure` pide el usuario administrador de MySQL y su contraseña sin mostrarla. Conserva la base `NovaObraTienda`, prepara sus diez tablas y crea una cuenta MySQL limitada a esa base. Guarda la cuenta de aplicación y una clave JWT aleatoria en **`backend/.env`**, excluido de Git y del ZIP. No guarda la clave administrativa. No borra tablas ni registros; rechaza una base con tablas ajenas. Si ya existe un archivo de configuración local, se conserva su conexión antes de preparar la cuenta.
+`db:configure` pide el usuario administrador de MySQL y su contraseña sin mostrarla. Conserva la base `NovaObraTienda`, prepara sus once tablas y crea una cuenta MySQL limitada a esa base. Guarda la cuenta de aplicación y una clave JWT aleatoria en **`backend/.env`**, excluido de Git y del ZIP. No guarda la clave administrativa. No borra tablas ni registros; rechaza una base con tablas ajenas. Si ya existe un archivo de configuración local, se conserva su conexión antes de preparar la cuenta.
 
 `admin:create` crea un administrador **web** con nombre, correo y contraseña elegidos localmente. El usuario web es distinto del usuario MySQL. No hay una contraseña web predeterminada. Las cuentas ya existentes siguen funcionando con su hash anterior.
 
@@ -25,7 +25,7 @@ La instalación y las pruebas se ejecutaron en Linux. Windows y macOS requieren 
 
 ### Actualizar desde una versión anterior
 
-No se cambia el esquema ni se copian datos a otra base. Si ya tienes un `.env` en la raíz, puedes copiarlo a `backend/.env` y conservarlo fuera de Git. Renombra `SESSION_SECRET` a `JWT_SECRET`, manteniendo su valor si tiene al menos 48 caracteres aleatorios. Se admite temporalmente el nombre anterior para compatibilidad; los ejemplos nuevos usan `JWT_SECRET`.
+Ejecuta `npm run db:setup` después de actualizar: añade únicamente la tabla técnica `sesiones_refresh` con `CREATE TABLE IF NOT EXISTS`, sin borrar los datos. Si ya tienes un `.env` en la raíz, puedes copiarlo a `backend/.env` y conservarlo fuera de Git. Renombra `SESSION_SECRET` a `JWT_SECRET`, manteniendo su valor si tiene al menos 48 caracteres aleatorios. Se admite temporalmente el nombre anterior para compatibilidad; los ejemplos nuevos usan `JWT_SECRET`.
 
 Las sesiones antiguas con el token HMAC propio dejan de ser válidas: vuelve a iniciar sesión para recibir un JWT estándar. Las cuentas, perfiles, pedidos y contraseñas no se eliminan.
 
@@ -57,19 +57,32 @@ No ejecutar la semilla sobre registros existentes. El preparador no sustituye mi
 - `POST /api/auth/register`: `{ nombre, correo, password }`, contraseña de 8 a 128 caracteres. Devuelve 201 con el usuario sin hash; correo duplicado devuelve 400.
 - `POST /api/auth/login`: `{ correo, password }`. Devuelve 200 con `{ token, usuario }`, o 401 si las credenciales son incorrectas.
 - `GET /api/auth/me`: requiere `Authorization: Bearer <token>`. Devuelve los datos públicos del usuario.
-- `POST /api/auth/session`: recupera el JWT vigente desde la cookie HttpOnly, con origen y cabecera CSRF comprobados; conserva su expiración original.
+- `POST /api/auth/refresh` (alias `/session`): rota el refresh de la cookie y genera un JWT de acceso nuevo; exige origen y cabecera CSRF.
 - `POST /api/auth/logout`: revoca las sesiones del usuario y elimina la cookie.
 - `PUT /api/auth/password`: verifica `actual`, guarda `nueva` y revoca las sesiones anteriores.
 
-Se mantienen `/auth/registro` y `/auth/yo` como compatibilidad; los CRUD y `/auth/me` exigen Bearer. El JWT usa HS256, firma, emisor, audiencia y expiración de ocho horas. El payload contiene identificador y versión de sesión, sin contraseña ni datos privados. El backend vuelve a comprobar que la cuenta esté activa y no se haya revocado.
+Se mantienen `/auth/registro` y `/auth/yo` como compatibilidad. Los CRUD y `/auth/me` exigen `Authorization: Bearer <token>`. El JWT se firma y verifica con `jsonwebtoken`, HS256, emisor y audiencia explícitos. Dura 15 minutos (`ACCESS_TOKEN_TTL_SECONDS`); contiene sub, versión, identificador de sesión, tipo, jti y fechas. Su contenido está codificado, no cifrado: nunca incluir contraseñas, claves ni datos privados.
 
-La persistencia de sesión usa una cookie `novaobra_session` **HttpOnly**, `SameSite=Lax`, ruta `/` y duración de ocho horas; en producción incorpora **Secure** y requiere HTTPS. El JWT se mantiene únicamente en memoria de React para enviarlo por Bearer. No se guarda en localStorage ni sessionStorage, y se retira la clave de almacenamiento de versiones anteriores.
+El refresh token es aleatorio y opaco, dura siete días absolutos (`REFRESH_TOKEN_TTL_SECONDS`) y solo viaja en la cookie `novaobra_refresh`: HttpOnly, SameSite=Lax, ruta `/api/auth`, Secure con HTTPS. MySQL guarda únicamente su hash SHA-256. Cada uso consume el token y genera otro; la reutilización revoca toda su familia, incluidos sus JWT. Logout y cambio de contraseña revocan todas las sesiones del usuario. Al actualizar desde la versión anterior hay que iniciar sesión nuevamente.
 
-Al recargar, React llama a `POST /auth/session` con credenciales, origen configurado y `X-NovaObra-Request: 1`. El servidor valida la cookie, firma, expiración, cuenta y revocación antes de devolver el mismo JWT. Esta recuperación no renueva su plazo ni implementa refresh tokens. Las llamadas HTTP usan `credentials: include`; los CRUD siguen exigiendo Bearer para cumplir el PDF. Mantener frontend/API en el mismo sitio, preferiblemente tras el mismo origen, para respetar SameSite.
+React guarda el JWT solo en memoria. Al recargar restaura la sesión mediante `/auth/refresh`. Renueva antes del vencimiento y, ante un 401 de la API, intenta una renovación y un reintento. Las llamadas simultáneas comparten una sola renovación; Web Locks serializa entre pestañas compatibles. Si el refresh vence o se revoca, vuelve al login. Sin Web Locks, renovaciones simultáneas entre pestañas pueden disparar la detección de reutilización y requerir login otra vez. Un fallo de red no elimina automáticamente la sesión.
 
-Una cookie HttpOnly no puede leerse mediante document.cookie. El JWT de memoria sigue siendo accesible a JavaScript; esto reduce la persistencia del secreto pero no hace la aplicación inmune a XSS. El contexto limpia la sesión ante expiración/401 y redirige al login. Logout y cambio de contraseña revocan los tokens y eliminan la cookie con el mismo alcance.
+Las cookies de renovación/logout requieren origen exacto y `X-NovaObra-Request: 1`; fetch usa `credentials: include`. Los clientes Bearer como Postman pueden cerrar sesión sin Origin. Se rechazan orígenes ajenos. Mantener frontend y API bajo el mismo origen. HttpOnly impide leer el refresh desde JavaScript, pero un XSS todavía puede realizar acciones desde la página; CSP, validación y HTTPS siguen siendo necesarios. localStorage y sessionStorage exponen tokens a JavaScript y no se usan.
 
-Los orígenes ajenos se rechazan y las mutaciones requieren JSON, salvo DELETE sin cuerpo. Bearer permite usar Postman sin una cabecera personalizada ni un Origin inventado. Para despliegue real, usar HTTPS; no se ha configurado ni publicado un dominio.
+## HTTPS
+
+Para probarlo en tu computadora, instala OpenSSL y ejecuta después de configurar la base:
+
+```sh
+npm run https:setup
+npm start
+```
+
+Abre **https://127.0.0.1:3443**. El iniciador compila React y sirve API e interfaz por HTTPS; http://127.0.0.1:3080 redirige allí. El certificado local es autofirmado y el navegador pedirá confiar en él para desarrollo. No se instala confianza global ni se desactiva la validación TLS de Node. La clave queda privada en `backend/.certs`, excluida de Git y ZIP; el comando conserva certificados existentes. Para volver al modo HTTP local, vacía TLS_CERT_PATH, TLS_KEY_PATH, HTTP_REDIRECT_PORT y restablece PORT=3003 y PUBLIC_URL=http://127.0.0.1:5174 en backend/.env.
+
+En producción usa `NODE_ENV=production`, `PUBLIC_URL=https://TU_DOMINIO`, certificados válidos en `TLS_CERT_PATH` y `TLS_KEY_PATH`, luego `npm run build` y `npm run serve`. Node acepta TLS 1.2 o superior y emite HSTS. Alternativamente usa [deploy/Caddyfile](deploy/Caddyfile): apunta el DNS al servidor, abre 80/443, configura `NOVAOBRA_DOMAIN` para Caddy y la app con HOST=127.0.0.1, PORT=3003, TRUST_PROXY=loopback y los campos TLS/redirect vacíos. Caddy obtiene/renueva el certificado público; el backend solo confía en el proxy local y rechaza HTTP sin la cabecera HTTPS del proxy. Conserva las claves fuera de Git y usa un supervisor de procesos.
+
+No se ha publicado un dominio: falta que el propietario indique dominio y servidor. HTTPS local y el servidor TLS sí se verificaron; la plantilla Caddy requiere validación en el despliegue elegido.
 
 ## Entidades y permisos conservados
 
@@ -121,6 +134,7 @@ $env:NOVAOBRA_TEST_ADMIN_FILE = 'RUTA_AL_JSON_PRIVADO_DE_PRUEBAS'
 npm run test:integration
 npm run test:postman
 npm run test:ui
+npm run test:https
 ```
 
 Linux/macOS:
@@ -130,6 +144,7 @@ export NOVAOBRA_TEST_ADMIN_FILE='/ruta/al/json-privado-de-pruebas'
 npm run test:integration
 npm run test:postman
 npm run test:ui
+npm run test:https
 ```
 
 Las pruebas de navegador requieren Chromium. Puede definirse `CHROMIUM_PATH` con su ejecutable o instalarlo con `npx playwright-core install chromium`. `CHROMIUM_NO_SANDBOX=1` se usa solo en contenedores de pruebas que lo necesiten. Sin archivo de pruebas, Node marca explícitamente las integraciones como omitidas; eso no significa que estén verificadas en tu equipo.
@@ -142,6 +157,7 @@ El código de backend reside en `backend/src/{models,controllers,routes,middlewa
 
 - [Matriz, cambios, estructura y resultados](docs/entrega-dia2.md).
 - [Contrato de API](docs/api.md).
+- [JWT, firma, renovación y riesgos de almacenamiento](docs/jwt.md).
 - [Diagrama ER real](docs/diagrama_ER.mmd).
 - [Limitaciones y pendientes](docs/pendientes.md).
 

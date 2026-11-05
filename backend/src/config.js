@@ -1,3 +1,5 @@
+import {resolve} from "node:path";
+import {fileURLToPath} from "node:url";
 import dotenv from "dotenv";
 dotenv.config({ path: [new URL("../.env", import.meta.url), new URL("../../.env", import.meta.url)], quiet: true });
 export function configuration() {
@@ -27,10 +29,28 @@ export function configuration() {
       throw new Error(`${name} debe estar entre ${name === "PORT" ? 0 : 1} y 65535.`);
   if (production && publicUrl.protocol !== "https:")
     throw new Error("Producción requiere PUBLIC_URL con HTTPS.");
+  const root=fileURLToPath(new URL('../../',import.meta.url));
+  const cert=process.env.TLS_CERT_PATH,key=process.env.TLS_KEY_PATH;
+  if(Boolean(cert)!==Boolean(key))throw new Error('Configura TLS_CERT_PATH y TLS_KEY_PATH juntos.');
+  const host=process.env.HOST||'127.0.0.1';
+  const trustProxy=process.env.TRUST_PROXY==='loopback';
+  if(process.env.TRUST_PROXY&&!trustProxy)throw new Error('TRUST_PROXY solo permite loopback.');
+  if(trustProxy&&!['127.0.0.1','::1'].includes(host))throw new Error('El proxy requiere HOST de loopback.');
+  if(production&&!cert&&!trustProxy)throw new Error('Producción requiere TLS nativo o TRUST_PROXY=loopback detrás de HTTPS.');
+  if(cert&&publicUrl.protocol!=='https:')throw new Error('TLS requiere PUBLIC_URL=https://...');
+  const redirectPort=process.env.HTTP_REDIRECT_PORT?Number(process.env.HTTP_REDIRECT_PORT):null;
+  if(redirectPort!==null&&(!cert||!Number.isInteger(redirectPort)||redirectPort<1||redirectPort>65535||redirectPort===port))throw new Error('HTTP_REDIRECT_PORT requiere TLS y un puerto distinto válido.');
+  const accessTokenSeconds=Number(process.env.ACCESS_TOKEN_TTL_SECONDS||900);
+  const refreshTokenSeconds=Number(process.env.REFRESH_TOKEN_TTL_SECONDS||604800);
+  if(!Number.isInteger(accessTokenSeconds)||accessTokenSeconds<30||accessTokenSeconds>3600)throw new Error('ACCESS_TOKEN_TTL_SECONDS: 30 a 3600.');
+  if(!Number.isInteger(refreshTokenSeconds)||refreshTokenSeconds<86400||refreshTokenSeconds>2592000)throw new Error('REFRESH_TOKEN_TTL_SECONDS: 86400 a 2592000.');
   const fee = process.env.DELIVERY_FEE;
   if (fee && !/^\d{1,8}(\.\d{1,2})?$/.test(fee))
     throw new Error("DELIVERY_FEE no válido.");
   return {
+    accessTokenSeconds,refreshTokenSeconds,trustProxy,redirectPort,
+    tls:cert?{cert:resolve(root,cert),key:resolve(root,key)}:null,
+    secureCookies:publicUrl.protocol==='https:',
     database,
     publicUrl: publicUrl.origin,
     secret,

@@ -3,6 +3,7 @@ import {
   randomBytes,
   scrypt as callbackScrypt,
   timingSafeEqual,
+  randomUUID,
 } from "node:crypto";
 import { promisify } from "node:util";
 import { AppError, check } from "./validaciones.js";
@@ -19,39 +20,37 @@ export async function verifyPassword(value, encoded) {
   const key = await scrypt(value, salt, 64, { N: 16384, r: 8, p: 1 });
   return timingSafeEqual(key, Buffer.from(hash, "hex"));
 }
-export function issueToken(user, secret, now = Date.now()) {
-  return jwt.sign({ v: user.version_sesion, iat: Math.floor(now / 1000) }, secret, {
-    algorithm: "HS256", subject: String(user.id), expiresIn: "8h", issuer: "NovaObra", audience: "NovaObra-client",
+export function issueToken(user, secret, now = Date.now(), seconds = 900) {
+  return jwt.sign({ v: user.version_sesion, kind: "access", jti: randomUUID(), ...(user.sessionFamily ? {sid:user.sessionFamily} : {}), iat: Math.floor(now / 1000) }, secret, {
+    algorithm: "HS256", subject: String(user.id), expiresIn: seconds, issuer: "NovaObra", audience: "NovaObra-client",
   });
 }
 export function readToken(token, secret, now = Date.now()) {
   try {
     const parsed = jwt.verify(token, secret, { algorithms: ["HS256"], issuer: "NovaObra", audience: "NovaObra-client", clockTimestamp: Math.floor(now / 1000) });
     const id = Number(parsed.sub);
-    return Number.isSafeInteger(id) && id > 0 && Number.isInteger(parsed.v) ? { ...parsed, id } : null;
+    return Number.isSafeInteger(id) && id > 0 && Number.isInteger(parsed.v) && parsed.kind === "access" ? { ...parsed, id } : null;
   } catch { return null; }
 }
-export function sessionCookie(res, token, production, clear = false) {
-  const options = {
-    httpOnly: true,
-    secure: production,
-    sameSite: "lax",
-    path: "/",
-  };
-  if (clear) res.clearCookie("novaobra_session", options);
-  else res.cookie("novaobra_session", token, { ...options, maxAge: 8 * 3600000 });
+export function refreshCookie(res, value, secure, expires, clear = false) {
+  const options={httpOnly:true,secure:Boolean(secure),sameSite:'lax',path:'/api/auth'};
+  if(clear)res.clearCookie('novaobra_refresh',options);
+  else res.cookie('novaobra_refresh',value,{...options,maxAge:Math.max(0,expires.getTime()-Date.now())});
+}
+export function clearSessionCookies(res, secure){
+  refreshCookie(res,'',secure,new Date(),true);
+  res.clearCookie('novaobra_session',{httpOnly:true,secure:Boolean(secure),sameSite:'lax',path:'/'});
 }
 export function cookieToken(req) {
-  const cookie = (req.headers.cookie || "").split(";").map(v => v.trim())
-    .find(v => v.startsWith("novaobra_session="));
-  try { return decodeURIComponent(cookie?.slice(17) || ""); } catch { return ""; }
+  const cookie=(req.headers.cookie||'').split(';').map(v=>v.trim()).find(v=>v.startsWith('novaobra_refresh='));
+  try{return decodeURIComponent(cookie?.slice('novaobra_refresh='.length)||'');}catch{return '';}
 }
 export function auth(pool, config) {
-  const authenticate = async (req, res, next, source = "auto") => {
+  const authenticate = async (req, res, next) => {
     try {
       const authorization = req.headers.authorization;
       const bearer = typeof authorization === "string" && /^Bearer [^ ]+$/i.test(authorization) ? authorization.slice(7) : "";
-      const value = source === "cookie" ? cookieToken(req) : authorization !== undefined ? bearer : cookieToken(req);
+      const value = bearer;
       const token = readToken(value, config.secret);
       check(token, "No autorizado", 401);
       const [[user]] = await pool.execute(
@@ -63,11 +62,13 @@ export function auth(pool, config) {
         "No autorizado",
         401,
       );
+      check(typeof token.sid === 'string' && /^[0-9a-f-]{36}$/i.test(token.sid),'No autorizado',401);
+      const [[family]]=await pool.execute('SELECT id FROM sesiones_refresh WHERE familia=? AND usuario_id=? AND consumido IS NULL AND revocado IS NULL AND expira>UTC_TIMESTAMP() LIMIT 1',[token.sid,user.id]);
+      check(family,'No autorizado',401);
       req.user = user;
       req.authToken = value;
       next();
     } catch (error) {
-      if (source === "cookie" && error.status === 401) sessionCookie(res, "", config.production, true);
       next(error);
     }
   };
@@ -77,7 +78,7 @@ export function auth(pool, config) {
       return next(new AppError(403, "Origen de la solicitud no permitido."));
     next();
   };
-  const requireCookie = (req, res, next) => authenticate(req, res, next, "cookie");
+
   const roles = (...allowed) => [
     requireUser,
     (req, res, next) =>
@@ -89,7 +90,7 @@ export function auth(pool, config) {
     if (!/^Bearer [^ ]+$/i.test(req.headers.authorization || "")) return next(new AppError(401, "No autorizado"));
     return requireUser(req, res, next);
   };
-  return { requireUser, requireBearer, requireCookie, cookieCsrf, roles };
+  return { requireUser, requireBearer, cookieCsrf, roles };
 }
 // Single-process bounded limiter. Production with multiple replicas needs a shared store.
 export function loginLimiter() {

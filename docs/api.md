@@ -9,7 +9,7 @@ Base local: `http://127.0.0.1:3003/api`. Respuestas JSON, salvo DELETE correcto 
 | POST | /auth/register | nombre, correo, password; 201 usuario sin hash; 400 duplicado o inválido |
 | POST | /auth/login | correo, password; 200 {token,usuario}; 401 credenciales incorrectas |
 | GET | /auth/me | Bearer; 200 usuario público, 401 {error:"No autorizado"} |
-| POST | /auth/session | Cookie HttpOnly vigente, Origin configurado y X-NovaObra-Request: 1; devuelve {token,usuario} sin renovar expiración |
+| POST | /auth/refresh (alias /auth/session) | Cookie refresh HttpOnly, Origin configurado y X-NovaObra-Request: 1; rota refresh y devuelve {token,usuario}; 401 al vencer/reutilizar |
 | POST | /auth/logout | Bearer y {}; revoca sesiones |
 | PUT | /auth/password | Bearer, actual y nueva; revoca sesiones |
 

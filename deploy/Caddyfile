@@ -1,0 +1,5 @@
+# Establece NOVAOBRA_DOMAIN con tu dominio público y apunta su DNS al servidor.
+# Caddy obtiene y renueva el certificado; abre TCP 80 y 443.
+{$NOVAOBRA_DOMAIN} {
+    reverse_proxy 127.0.0.1:3003
+}

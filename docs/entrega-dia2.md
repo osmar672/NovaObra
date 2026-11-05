@@ -121,14 +121,8 @@ mini-proyecto-1/
 
 Los comandos exactos están en README y package.json. Desde la raíz: `npm ci`, `npm run db:configure`, `npm run admin:create`, `npm start`. Interfaz en `http://127.0.0.1:5174`. Con configuración existente válida, solo `npm start`.
 
-Consultar `docs/pendientes.md` para los límites de plataforma, acceso a MySQL local y despliegue. No queda implementada una investigación académica, un nuevo sistema de roles, refresh tokens ni un despliegue HTTPS; no forman parte del alcance autorizado.
+Consultar `docs/pendientes.md` para los límites de plataforma, acceso a MySQL local y despliegue. No se incluye investigación académica ni un sistema de roles nuevo. Por ampliación autorizada se añadieron refresh tokens y HTTPS nativo; el despliegue público requiere dominio y servidor.
 
 ## Integración de cookies de sesión
 
-La sesión persiste mediante novaobra_session HttpOnly, SameSite=Lax y Secure en producción. React mantiene el JWT únicamente en memoria y lo recupera con POST /api/auth/session, protegido por origen y cabecera personalizada. Se conserva la obligación Bearer de todos los CRUD. La recuperación conserva el mismo JWT y su expiración original. Logout, cambio de contraseña y rechazo de una cookie inválida eliminan la cookie con alcance consistente.
-
-Pruebas: tests/cookies.test.js comprueba cabeceras reales de emisión/borrado y Secure por entorno; tests/cookies.js verifica recuperación, rechazo de CSRF, token vencido, revocación y que una cookie sola no abra los CRUD; tests/day2-ui.js comprueba HttpOnly, ausencia del JWT en sessionStorage/document.cookie, recarga, expiración y eliminación al cerrar sesión.
-
-## Actualización de seguridad de dependencias
-
-Se reprodujeron las 19 alertas (6 moderadas, 12 altas y 1 crítica) del árbol de Newman y se corrigieron las diez dependencias causantes sin retirar el ejecutor ni la colección. Las auditorías completa y de producción devuelven cero. Se añadió una verificación real de los 118 generadores y de iteraciones CSV con caracteres especiales. El detalle, versiones, parches y comandos están en [vulnerabilidades](vulnerabilidades.md).
+La sesión usa refresh opaco en novaobra_refresh HttpOnly, SameSite=Lax, Secure con HTTPS y JWT de acceso de 15 minutos solo en memoria. POST /api/auth/refresh (alias /session) rota el refresh; la reutilización revoca la familia. La tabla técnica sesiones_refresh se añade conservando las diez originales. Consultar README para HTTPS local, producción y pruebas.

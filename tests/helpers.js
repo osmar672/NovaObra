@@ -6,7 +6,7 @@ import { createApp } from "../backend/src/app.js";
 import { hashPassword } from "../backend/src/middlewares/authMiddleware.js";
 import { createPool } from "../backend/src/db.js";
 export const available = !!process.env.NOVAOBRA_TEST_ADMIN_FILE;
-export async function fixture({ seed = true } = {}) {
+export async function fixture({ seed = true, overrides = {} } = {}) {
   const credentials = JSON.parse(
     await readFile(process.env.NOVAOBRA_TEST_ADMIN_FILE, "utf8"),
   );
@@ -49,6 +49,8 @@ export async function fixture({ seed = true } = {}) {
         deliveryFee: 2500,
       },
     };
+    Object.assign(config,overrides);
+    const tokens=new Map();
     const app = createApp(pool, config);
     server = await new Promise((resolve) => {
       const s = app.listen(0, "127.0.0.1", () => resolve(s));
@@ -67,7 +69,7 @@ export async function fixture({ seed = true } = {}) {
     ) {
       const headers = {};
       if (cookie) headers.Cookie = cookie;
-      if(token||cookie)headers.Authorization = `Bearer ${token || cookie.slice(cookie.indexOf("=")+1)}`;
+      if(token||tokens.has(cookie))headers.Authorization = `Bearer ${token || tokens.get(cookie)}`;
       if (body !== undefined) {
         headers["Content-Type"] = "application/json";
         if (origin) headers.Origin = origin;
@@ -81,10 +83,12 @@ export async function fixture({ seed = true } = {}) {
       const content = response.headers.get("content-type")?.includes("json")
         ? await response.json()
         : await response.text();
+      const responseCookie=response.headers.getSetCookie()[0]?.split(";")[0];
+      if(content.token&&responseCookie)tokens.set(responseCookie,content.token);
       return {
         status: response.status,
         body: content,
-        cookie: response.headers.get("set-cookie")?.split(";")[0],
+        cookie: responseCookie,
         headers: response.headers,
       };
     }
