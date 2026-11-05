@@ -169,6 +169,7 @@ export default function Layout() {
         </div>
         <div className="container footer-bottom">
           © {new Date().getFullYear()} NovaObra · Costa Rica{" "}
+          <a className="photo-credits" href="/photos/CREDITOS.txt" target="_blank" rel="noopener noreferrer">Créditos de fotografía</a>
           <span>
             Los pedidos se pagan por los medios que confirme la tienda.
           </span>

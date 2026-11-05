@@ -83,7 +83,7 @@ test(
         await page.goto(f.config.publicUrl);
         await page
           .getByRole("heading", {
-            name: "Tu próxima gran obra empieza aquí.",
+            name: "Equípate para construir en grande.",
           })
           .waitFor();
         await page
@@ -268,7 +268,7 @@ test(
           await page.goto(f.config.publicUrl);
           await page
             .getByRole("heading", {
-              name: "Tu próxima gran obra empieza aquí.",
+              name: "Equípate para construir en grande.",
             })
             .waitFor();
           await page.screenshot({
