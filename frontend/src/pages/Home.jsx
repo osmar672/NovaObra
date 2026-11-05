@@ -4,13 +4,13 @@ import { useData } from "../hooks/useData.js";
 import { Meta, ProductCard, Feedback, Empty } from "../components/UI.jsx";
 import {useAuth} from "../context/AuthContext.jsx";
 import {Icon,LocationMap} from '../components/Visuals.jsx';
-import {productVisual} from '../services/presentation.js';
+import {productVisual,photoPath} from '../services/presentation.js';
 export default function Home() {
   const {user}=useAuth();
   const featured = useData(user ? "/productos?destacado=1" : null, { poll: true }),
     latest = useData(user ? "/productos?orden=nuevos" : null, { poll: true }),
     categories = useData(user ? "/categorias" : null);
-  const inspiration=[{nombre:'Herramientas',descripcion:'Equipa tus ideas.',visual:'tools'},{nombre:'Construcción',descripcion:'Las bases de tu proyecto.',visual:'materials'},{nombre:'Pinturas',descripcion:'Renueva cada espacio.',visual:'paint'},{nombre:'Electricidad',descripcion:'Conecta tus proyectos.',visual:'electric'},{nombre:'Plomería',descripcion:'Cada conexión cuenta.',visual:'plumbing'},{nombre:'Seguridad',descripcion:'Trabaja con protección.',visual:'safety'}];
+  const inspiration=[{nombre:'Herramientas',descripcion:'Equipa tus ideas.',visual:'drill'},{nombre:'Medición',descripcion:'Cada detalle cuenta.',visual:'measure'},{nombre:'Corte y acabado',descripcion:'Dale forma a tus ideas.',visual:'saw'},{nombre:'Herramientas manuales',descripcion:'Lo esencial de tu taller.',visual:'hammer'},{nombre:'Plomería',descripcion:'Cada conexión cuenta.',visual:'wrench'},{nombre:'Seguridad',descripcion:'Trabaja con protección.',visual:'helmet'}];
   const displayedCategories=categories.data?.length?categories.data:inspiration;
   return (
     <>
@@ -20,9 +20,9 @@ export default function Home() {
           <div>
             <span className="eyebrow">FERRETERÍA & CONSTRUCCIÓN · COSTA RICA</span>
             <h1>
-              Tu próxima gran obra
+              Equípate para
               <br />
-              <em>empieza aquí.</em>
+              <em>construir en grande.</em>
             </h1>
             <p>
               Encuentra los materiales y herramientas para darle forma a tus
@@ -42,7 +42,7 @@ export default function Home() {
               <span>03 / Crea</span>
             </div>
           </div>
-          <div className="hero-visual"><img src="/images/workshop.svg" alt="Taller ilustrado con taladro, casco y materiales de construcción" fetchPriority="high" width="960" height="920"/><div className="hero-image-caption"><span className="caption-icon"><Icon name="tool"/></span><div><strong>De la idea a la obra.</strong><span>Encuentra con qué hacerlo posible.</span></div><span className="caption-number">01 —</span></div><span className="hero-vertical-label">NOVAOBRA / HECHO PARA CONSTRUIR</span></div>
+          <div className="hero-visual"><img src="/photos/workbench.avif" alt="Fotografía de un banco de carpintería con herramientas reales" fetchPriority="high" width="960" height="920"/><div className="hero-image-caption"><span className="caption-icon"><Icon name="tool"/></span><div><strong>De la idea a la obra.</strong><span>Encuentra con qué hacerlo posible.</span></div><span className="caption-number">01 —</span></div><span className="hero-vertical-label">NOVAOBRA / HECHO PARA CONSTRUIR</span></div>
         </div>
       </section>
       <div className="value-strip container">
@@ -71,7 +71,7 @@ export default function Home() {
         <div className="category-grid">
           {displayedCategories.map((c, i) => (
             <Link to={c.id?`/catalogo?categoria=${c.id}`:'/catalogo'} key={c.id||c.nombre}>
-              <img src={`/images/${c.visual||productVisual({nombre:c.nombre})}.svg`} alt="" loading="lazy" width="640" height="480"/><span className="category-number">0{i + 1}</span>
+              <img src={photoPath(c.visual||productVisual({nombre:c.nombre}))} alt="" loading="lazy" width="640" height="480"/><span className="category-number">0{i + 1}</span>
               <h3>{c.nombre}</h3>
               <p>{c.descripcion}</p>
               <span aria-hidden="true">→</span>
@@ -89,7 +89,7 @@ export default function Home() {
             <Link to="/catalogo">Ver todos →</Link>
           </div>
           <Feedback {...featured} />
-          {!user&&<div className="catalog-invitation"><img src="/images/tools.svg" alt="Ilustración de herramientas para tu proyecto" loading="lazy"/><div><span className="eyebrow">PREPARA TU PRÓXIMO PROYECTO</span><h3>Las herramientas correctas.<br/>Las posibilidades que imaginas.</h3><p>Inicia sesión para explorar productos, consultar precios y disponibilidad, y guardar tu lista de materiales.</p><Link className="button" to="/login">Entrar al catálogo <Icon name="arrow"/></Link></div></div>}
+          {!user&&<div className="catalog-invitation"><img src="/photos/drill.webp" alt="Fotografía de un taladro real sobre fondo blanco" loading="lazy"/><div><span className="eyebrow">PREPARA TU PRÓXIMO PROYECTO</span><h3>Encuentra tu próxima herramienta.</h3><p>Inicia sesión para ver el catálogo con sus precios, descripciones y existencias. Usa tu cuenta de siempre.</p><Link className="button" to="/login">Entrar al catálogo <Icon name="arrow"/></Link></div></div>}
           <div className="product-grid">
             {featured.data?.items.slice(0, 4).map((p) => (
               <ProductCard key={p.id} product={p} />

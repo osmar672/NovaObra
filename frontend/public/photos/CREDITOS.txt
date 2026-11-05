@@ -1,0 +1,75 @@
+FOTOGRAFÍAS REALES — NOVAOBRA
+
+Fotografías de terceros. No se generaron imágenes con IA.
+Las doce fotografías listadas a continuación proceden de Unsplash.
+Licencia original: https://unsplash.com/license
+Las imágenes de referencia no garantizan la marca ni el modelo exacto vendido.
+Las fotografías propias configuradas por la tienda tienen prioridad.
+
+workshop.avif
+Autor: Barn Images
+Original: https://unsplash.com/photos/t5YUoHW6zRo
+
+drill.webp
+Autor: Syed Hussaini
+Original: https://unsplash.com/photos/MXeDE_yCdHQ
+
+drilling.avif
+Autor: NeONBRAND
+Original: https://unsplash.com/photos/CuDoRFyTkAQ
+
+hammer.webp
+Autor: Jozsef Hocza
+Original: https://unsplash.com/photos/D3nouOYbALc
+
+pliers.webp
+Autor: Everyday basics
+Original: https://unsplash.com/photos/I8eTuMmxIfo
+
+wrench.webp
+Autor: Recha Oktaviani
+Original: https://unsplash.com/photos/t__61ap00Mc
+
+screwdriver.webp
+Autor: Tekton
+Original: https://unsplash.com/photos/jlY6nV_STIw
+
+helmet.avif
+Autor: Ümit Yıldırım
+Original: https://unsplash.com/photos/red-hard-hat-on-pavement-9OB46apMbC4
+
+workbench.avif
+Autor: Brett Garwood
+Original: https://unsplash.com/photos/brown-wooden-stick-on-brown-wooden-table-asZVvgMGshc
+
+saw.avif
+Autor: Jonathan Cooper
+Original: https://unsplash.com/photos/fTpzd-PjyDQ
+
+measure.avif
+Autor: Brett Jordan
+Original: https://unsplash.com/photos/blue-and-yellow-measuring-tape-faOPbPmznfQ
+
+gloves.avif
+Autor: Roman Kraft
+Original: https://unsplash.com/photos/pair-of-brown-and-yellow-leather-gloves-n_vD-7RxA3Q
+
+Fotografías optimizadas localmente a AVIF/WebP, obtenidas del espejo público:
+https://github.com/testsmith-io/practice-software-testing/tree/main/sprint5/UI/src/assets/img
+No se reutiliza código, marcas ni el diseño de ese proyecto; las fotografías
+son obras de sus respectivos autores y se usan según su licencia original.
+
+
+construction.avif
+Autor: Ade Adebowale
+Original: https://unsplash.com/photos/DKr6BEdI2sE
+Licencia Unsplash.
+
+Fotografías de referencia adicionales de catálogos públicos:
+paint.webp (fotografía de estantes con pinturas, no de una marca/modelo concreto)
+https://github.com/ShaznaSalman/Hardware-Store-website/blob/master/images/card/Paints.jpg
+pipe.webp (fotografía de tubos PVC)
+https://github.com/ShaznaSalman/Hardware-Store-website/blob/master/images/card/PVC.avif
+bulb.webp (fotografía de referencia de lámpara LED)
+https://github.com/Ferreteria-San-Francisco/ferreteria-san-francisco-web/blob/main/src/assets/images/products/Focos%20Led/Foco%20Led%20de%205%20a%2015.png
+Los titulares conservan los derechos de estas fotografías y marcas.

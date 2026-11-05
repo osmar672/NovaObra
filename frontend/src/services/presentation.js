@@ -1,15 +1,27 @@
-// Presentación únicamente: no modifica los productos ni sus datos almacenados.
+// Recursos de presentación: los datos comerciales siguen viniendo de MySQL.
 export function productVisual(product={}){
  const value=`${product.nombre||''} ${product.categoria||''}`.toLowerCase();
- if(/pint|brocha|rodillo|color/.test(value))return 'paint';
- if(/tubo|plomer|agua|grifo|pvc/.test(value))return 'plumbing';
- if(/eléctr|electr|cable|enchufe|bombill/.test(value))return 'electric';
- if(/cemento|bloque|arena|material|ladrillo|construcción/.test(value))return 'materials';
- if(/casco|seguridad|guante|protección/.test(value))return 'safety';
- return 'tools';
+ if(/martillo/.test(value))return 'hammer';
+ if(/taladro|atornillador/.test(value))return 'drill';
+ if(/alicate|pinza/.test(value))return 'pliers';
+ if(/destornillador/.test(value))return 'screwdriver';
+ if(/sierra|serrucho/.test(value))return 'saw';
+ if(/cinta|medici|metro/.test(value))return 'measure';
+ if(/guante|jardin|jardín|podar/.test(value))return 'gloves';
+ if(/casco|seguridad|protección/.test(value))return 'helmet';
+ if(/pint|brocha|rodillo/.test(value))return 'paint';
+ if(/cemento|bloque|arena|construcción|construccion/.test(value))return 'construction';
+ if(/bombill|lámpara|lampara|eléctr|electr|led/.test(value))return 'bulb';
+ if(/tubo|pvc/.test(value))return 'pipe';
+ if(/plomer|fontaner|grifo/.test(value))return 'wrench';
+ return 'workbench';
 }
+export const photoPath=name=>`/photos/${name}.${["paint","pipe","bulb","drill","hammer","pliers","wrench","screwdriver"].includes(name)?"webp":"avif"}`;
 export function productDescription(product={}){
- if(product.descripcion?.trim())return product.descripcion;
- const descriptions={tools:'Equipa tu espacio de trabajo y prepara las herramientas para tu próximo proyecto.',materials:'Encuentra materiales para avanzar en tus proyectos de construcción y renovación.',paint:'Dale una nueva vida a tus espacios y prepara los detalles de tu próximo acabado.',plumbing:'Prepara tus proyectos de instalación, reparación y mantenimiento de plomería.',electric:'Organiza los materiales para tus proyectos de instalación y mantenimiento eléctrico.',safety:'Prepara tu equipo de protección antes de empezar a trabajar.'};
- return descriptions[productVisual(product)];
+ return product.descripcion?.trim() || 'La tienda todavía no ha añadido una descripción para este producto. Consulta los detalles antes de preparar tu pedido.';
+}
+export function productPrice(product={}){
+ const raw=product.precio_actual??product.precio;
+ const value=raw===null||raw===undefined||raw===''?NaN:Number(raw);
+ return Number.isFinite(value)&&value>0?value:null;
 }

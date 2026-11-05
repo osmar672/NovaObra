@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { money, productPath } from "../services/api.js";
 import { useShop } from "../context/ShopContext.jsx";
-import {productVisual,productDescription} from '../services/presentation.js';
+import {productVisual,productDescription,productPrice,photoPath} from '../services/presentation.js';
+import {Icon} from './Visuals.jsx';
 export function Meta({
   title,
   description = "Herramientas, materiales y accesorios para construir tu próximo proyecto. Precios y disponibilidad de NovaObra.",
@@ -49,15 +50,16 @@ export function ProductImage({ product }) {
       referrerPolicy="no-referrer"
     />
   ) : (
-    <div className="product-illustration">
-      <img src={`/images/${productVisual(product)}.svg`} alt={`Ilustración de referencia para ${product.categoria||'herramientas'}`} loading="lazy" decoding="async" width="640" height="480"/>
-      <span>Imagen ilustrativa</span>
+    <div className="product-reference">
+      <img src={photoPath(productVisual(product))} alt={`Fotografía de referencia de herramientas; no representa necesariamente el modelo ${product.nombre}`} loading="lazy" decoding="async" width="640" height="480"/>
+      <span>Foto de referencia</span>
     </div>
   );
 }
 export function ProductCard({ product: p }) {
   const { add, favorites, favorite } = useShop();
-  const offer = p.precio_actual < p.precio;
+  const price=productPrice(p);
+  const offer = price!==null && price < Number(p.precio);
   return (
     <article className="product-card">
       <div className="product-picture">
@@ -81,13 +83,12 @@ export function ProductCard({ product: p }) {
         <h3>
           <Link to={productPath(p)}>{p.nombre}</Link>
         </h3>
+        <div className="price"><span className="price-label">Precio · CRC</span><strong>{price===null?'Consultar precio':money(price)}</strong>{offer && <del>{money(p.precio)}</del>}</div>
         <p className="product-description">{productDescription(p)}</p>
         <p className={`stock ${p.existencia>0?"in-stock":"out-of-stock"}`}>
           {p.existencia > 0 ? `${p.existencia} disponibles` : "Agotado"}
         </p>
-        <div className="price">
-          {money(p.precio_actual)} {offer && <del>{money(p.precio)}</del>}
-        </div>
+        <Link className="product-details-link" to={productPath(p)}>Ver producto y descripción completa <Icon name="arrow" size={16}/></Link>
         <button onClick={() => add(p)} disabled={p.existencia < 1}>
           Agregar al carrito <span aria-hidden="true">+</span>
         </button>

@@ -4,13 +4,14 @@ import { useData } from "../hooks/useData.js";
 import { useShop } from "../context/ShopContext.jsx";
 import { money, productPath } from "../services/api.js";
 import { Meta, ProductImage, Feedback } from "../components/UI.jsx";
-import {productDescription} from '../services/presentation.js';
+import {productDescription,productPrice} from '../services/presentation.js';
 import {Icon} from '../components/Visuals.jsx';
 export default function Product() {
   const { id } = useParams(),
     state = useData(`/productos/${id}`, { poll: true }),
     { add, favorites, favorite, setNotice } = useShop(),
     p = state.data;
+  const price=p?productPrice(p):null;
   async function share() {
     try {
       if (navigator.share)
@@ -62,15 +63,16 @@ export default function Product() {
               </span>
               <h1>{p.nombre}</h1>
               <p className="muted">SKU: {p.sku}</p>
-              <div className="detail-price">
-                {money(p.precio_actual)}{" "}
-                {p.precio_actual < p.precio && <del>{money(p.precio)}</del>}
+              <div className="detail-price"><span className="price-label">Precio del producto · CRC</span>
+                <strong>{price===null?"Consultar precio":money(price)}</strong>{" "}
+                {price!==null && price < Number(p.precio) && <del>{money(p.precio)}</del>}
               </div>
               <p className={`stock ${p.existencia>0?"in-stock":"out-of-stock"}`}>
                 {p.existencia
                   ? `${p.existencia} unidades disponibles`
                   : "Actualmente agotado"}
               </p>
+              <h2 className="description-heading">Descripción del producto</h2>
               <p className="prewrap detail-description">{productDescription(p)}</p>
               <div className="button-row">
                 <button disabled={!p.existencia} onClick={() => add(p)}>

@@ -17,7 +17,7 @@ export function About() {
     <div className="container section narrow">
       <Meta title="Nosotros" />
       <PageHeading eyebrow="NOVAOBRA" title="Un lugar para tus proyectos" />
-      <img className="about-cover" src="/images/workshop.svg" alt="Ilustración de un taller preparado para construir"/>
+      <img className="about-cover" src="/photos/workshop.avif" alt="Fotografía de herramientas organizadas en un taller"/>
       <Feedback {...state} />
       <p className="lead prewrap">
         {state.data?.about ||
