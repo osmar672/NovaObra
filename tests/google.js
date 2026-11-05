@@ -28,10 +28,10 @@ test('Google: CSRF, estado alterado/vencido, cancelación, nonce, firma, issuer,
   const tx=openOAuthTransaction(start.cookie.split('=')[1],f.config.secret);tx.expires=Date.now()-1;
   assert.match((await f.callback(start,{code:'bad',cookie:'novaobra_google_oauth='+sealOAuthTransaction(tx,f.config.secret)})).location,/google_error=state/);
   start=await f.begin();assert.match((await f.callback(start,{error:'access_denied'})).location,/google_error=cancelled/);
-  for(const [claims,reason]of [[{nonce:'incorrecto'},'nonce'],[{aud:'otra-aplicacion'},'provider'],[{iss:'https://evil.test'},'provider'],[{exp:Math.floor(Date.now()/1000)-3600},'provider'],[{email_verified:false},'unverified']]){
+  for(const [claims,reason]of [[{nonce:'incorrecto'},'nonce'],[{aud:'otra-aplicacion'},'verification'],[{iss:'https://evil.test'},'verification'],[{exp:Math.floor(Date.now()/1000)-3600},'clock'],[{email_verified:false},'unverified']]){
    start=await f.begin();const result=await f.callback(start,{code:f.code(start,claims)});assert.match(result.location,new RegExp('google_error='+reason));assert.equal(result.cookie,undefined);
   }
-  start=await f.begin();const bad=f.code(start);f.codes.get(bad).token=f.codes.get(bad).token.slice(0,-8)+'xxxxxxxx';assert.match((await f.callback(start,{code:bad})).location,/google_error=provider/);
+  start=await f.begin();const bad=f.code(start);f.codes.get(bad).token=f.codes.get(bad).token.slice(0,-8)+'xxxxxxxx';assert.match((await f.callback(start,{code:bad})).location,/google_error=verification/);
   assert.equal((await f.pool.query('SELECT COUNT(*) AS n FROM identidades_google'))[0][0].n,0);
  }finally{await f.close();}
 });
@@ -58,5 +58,24 @@ test('Google deshabilitado y migración de once tablas conservan las cuentas y s
   await f.pool.query('DROP TABLE identidades_google');await f.pool.query('ALTER TABLE usuarios DROP COLUMN password_local');
   await setup(f.admin,f.database);assert.deepEqual((await f.pool.query('SELECT id,email,password_hash,rol_id,activo FROM usuarios ORDER BY id'))[0],before);
   assert.ok((await f.pool.query('SELECT password_local FROM usuarios'))[0].every(u=>u.password_local===1));
+ }finally{await f.close();}
+});
+
+test('Google: fallos de credenciales, red y esquema llegan al login sin filtrar secretos',{skip:!available,timeout:15000},async t=>{
+ const f=await oauthFixture(),lines=[];t.mock.method(console,'warn',line=>lines.push(line));
+ try{
+  const getToken=f.providerClient.getToken;
+  for(const [error,reason] of [[{response:{data:{error:'invalid_client',error_description:'private-secret'}},config:{data:'client_secret=private-secret'}},'credentials'],[{cause:{code:'ENOTFOUND'},message:'private-request'},'network']]){
+   f.providerClient.getToken=async()=>{throw error;};
+   const start=await f.begin(),result=await f.callback(start,{code:f.code(start)});
+   assert.equal(new URL(result.location).searchParams.get('google_error'),reason);assert.equal(result.cookie,undefined);assert.ok(result.cookies.some(c=>c.startsWith('novaobra_google_oauth=;')));
+  }
+  f.providerClient.getToken=getToken;
+  assert.equal((await f.pool.query('SELECT COUNT(*) AS n FROM identidades_google'))[0][0].n,0);
+  await f.pool.query('DROP TABLE identidades_google');
+  const start=await f.begin(),result=await f.callback(start,{code:f.code(start)});
+  assert.equal(new URL(result.location).searchParams.get('google_error'),'database_schema');assert.equal(result.cookie,undefined);
+  assert.deepEqual(lines,['[NovaObra Google] etapa=exchange motivo=credentials','[NovaObra Google] etapa=exchange motivo=network','[NovaObra Google] etapa=identity motivo=database_schema']);
+  assert.ok(!JSON.stringify(lines).includes('private-'));
  }finally{await f.close();}
 });

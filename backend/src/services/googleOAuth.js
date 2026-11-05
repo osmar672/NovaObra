@@ -1,3 +1,4 @@
+import {googleProviderFailure} from './googleDiagnostics.js';
 import {OAuth2Client,CodeChallengeMethod} from 'google-auth-library';
 import {randomBytes,createHash,createCipheriv,createDecipheriv,timingSafeEqual} from 'node:crypto';
 import {GoogleLoginError} from '../models/googleIdentity.js';
@@ -15,9 +16,13 @@ export function matchingState(actual,expected){return typeof actual==='string'&&
 export function googleClient(config,injected){return injected||new OAuth2Client({clientId:config.google.clientId,clientSecret:config.google.clientSecret,redirectUri:config.google.redirectUri,transporterOptions:{timeout:10000}});}
 export function googleAuthorizationUrl(client,tx){return client.generateAuthUrl({scope:['openid','email','profile'],access_type:'online',prompt:'select_account',state:tx.state,nonce:tx.nonce,code_challenge:createHash('sha256').update(tx.codeVerifier).digest('base64url'),code_challenge_method:CodeChallengeMethod.S256});}
 export async function googleClaims(client,config,code,tx){
- const {tokens}=await client.getToken({code,codeVerifier:tx.codeVerifier,redirect_uri:config.google.redirectUri});
+ let tokens;
+ try{({tokens}=await client.getToken({code,codeVerifier:tx.codeVerifier,redirect_uri:config.google.redirectUri}));}
+ catch(error){throw googleProviderFailure(error,'exchange');}
  if(!tokens.id_token)throw new GoogleLoginError('provider');
- const ticket=await client.verifyIdToken({idToken:tokens.id_token,audience:config.google.clientId});
+ let ticket;
+ try{ticket=await client.verifyIdToken({idToken:tokens.id_token,audience:config.google.clientId});}
+ catch(error){throw googleProviderFailure(error,'verification');}
  const claims=ticket.getPayload();
  if(!claims||!matchingState(claims.nonce,tx.nonce))throw new GoogleLoginError('nonce');
  return claims;
