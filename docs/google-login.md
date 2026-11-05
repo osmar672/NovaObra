@@ -55,3 +55,22 @@ Si Google muestra `redirect_uri_mismatch`, corrige la URI exacta. Si el cliente 
 Se usan código de autorización, PKCE S256, state y nonce aleatorios. La transacción se guarda diez minutos en una cookie HttpOnly cifrada y autenticada. El backend intercambia el código y verifica firma, emisor, audiencia, expiración, nonce y correo verificado. La identidad se vincula por el `sub` estable de Google; no se guardan access tokens ni refresh tokens de Google. NovaObra emite su propia sesión con refresh HttpOnly y JWT en memoria.
 
 Las pruebas automáticas incluyen firma RSA válida e inválida, CSRF, estado vencido/alterado, replay del código, usuario desactivado y vinculación con contraseña. La prueba de Chromium recorre las redirecciones y cookies con el transporte del proveedor simulado. No se dispone de un cliente OAuth real del propietario en este entorno, por lo que la activación y la prueba externa con Google quedan pendientes de su configuración.
+
+## Si falla después de elegir tu cuenta
+
+El login muestra ahora el tipo de fallo. La terminal donde ejecutas npm start imprime una línea como `[NovaObra Google] etapa=exchange motivo=credentials`, sin secretos, códigos, tokens ni datos de la cuenta. Comparte únicamente esa línea para diagnosticar el acceso; no publiques el archivo .env ni la URL completa de regreso de Google.
+
+| Motivo | Qué revisar |
+| --- | --- |
+| credentials | ID y secreto deben pertenecer al mismo cliente de tipo Aplicación web. Vuelve a ejecutar npm run google:configure y reinicia. |
+| redirect | La URI autorizada debe ser exactamente PUBLIC_URL + /api/auth/google/callback. |
+| code_expired | Inicia un intento nuevo con el botón; no recargues ni reutilices la dirección de callback. Si persiste, revisa cliente, redirección y que no haya otra instancia de NovaObra. |
+| network | La computadora que ejecuta el backend necesita alcanzar oauth2.googleapis.com y www.googleapis.com por HTTPS. Revisa conexión/proxy/firewall. |
+| tls | Revisa fecha, hora y confianza de certificados del equipo; no desactives la verificación TLS. |
+| clock | Activa fecha y hora automáticas en el equipo del backend y comienza un nuevo intento. |
+| database_schema | Ejecuta npm run db:setup desde la raíz y reinicia. |
+| session_error | Revisa MySQL y los permisos de la cuenta de aplicación. |
+| verification | La identidad no pasó los controles del token. Reintenta; si persiste, revisa el cliente configurado. |
+| provider_unavailable | Google devolvió un límite o error temporal; espera y vuelve a iniciar el acceso. |
+
+Estas categorías permiten distinguir el fallo, pero no certifican su causa exacta en una computadora ajena. La integración conserva todos los controles de firma, audiencia, emisor, nonce y estado.

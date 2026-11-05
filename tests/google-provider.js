@@ -32,5 +32,5 @@ export async function oauthFixture(){
   return {status:response.status,location:response.headers.get('location'),cookies:response.headers.getSetCookie(),cookie:response.headers.getSetCookie().find(c=>c.startsWith('novaobra_refresh='))?.split(';')[0]};
  }
  async function restore(cookie){const r=await fetch(f.base+'/api/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json',Origin:f.config.publicUrl,'X-NovaObra-Request':'1',Cookie:cookie||''},body:'{}'});return{status:r.status,body:await r.json()};}
- return {...f,begin,code,callback,restore,calls:()=>calls,codes};
+ return {...f,providerClient:client,begin,code,callback,restore,calls:()=>calls,codes};
 }

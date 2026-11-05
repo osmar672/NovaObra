@@ -1,3 +1,4 @@
+import {googleCallbackDiagnostic} from '../services/googleDiagnostics.js';
 import {Router} from 'express';
 import {check,credential} from '../middlewares/validaciones.js';
 import {verifyPassword,refreshCookie,loginLimiter} from '../middlewares/authMiddleware.js';
@@ -23,14 +24,18 @@ export function googleRoutes(pool,config,access,adapters={}){
  router.post('/link',attempts,access.cookieCsrf,access.requireBearer,available,begin('link'));
  router.get('/callback',attempts,async(req,res)=>{
   res.set({'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
+  let stage='transaction';
   try{
    if(!enabled)throw new GoogleLoginError('configuration');
    const tx=openOAuthTransaction(oauthCookie(req),config.secret);
    if(!matchingState(req.query.state,tx.state))throw new GoogleLoginError('state');
    if(req.query.error)throw new GoogleLoginError(req.query.error==='access_denied'?'cancelled':'provider');
    if(typeof req.query.code!=='string'||!req.query.code||req.query.code.length>4096)throw new GoogleLoginError('provider');
+   stage='exchange';
    const claims=await googleClaims(client,config,req.query.code,tx);
+   stage='identity';
    const user=await resolveGoogleIdentity(pool,claims,tx);
+   stage='session';
    const session=await startSession(pool,user,config);
    refreshCookie(res,session.value,secure,session.expires);
    res.clearCookie('novaobra_session',{httpOnly:true,secure:Boolean(secure),sameSite:'lax',path:'/'});
@@ -38,7 +43,8 @@ export function googleRoutes(pool,config,access,adapters={}){
    res.redirect(303,config.publicUrl+'/auth/google/complete?next='+encodeURIComponent(safeReturnTo(tx.returnTo)));
   }catch(error){
    setOAuthCookie(res,'',secure,true);
-   const reason=error instanceof GoogleLoginError?error.reason:'provider';
+   const {reason,line}=googleCallbackDiagnostic(error,stage);
+   console.warn(line);
    res.redirect(303,config.publicUrl+'/login?google_error='+encodeURIComponent(reason));
   }
  });
