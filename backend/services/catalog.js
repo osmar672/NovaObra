@@ -66,14 +66,17 @@ export async function catalog(pool, query, admin = false) {
     paginas: Math.ceil(count.total / limit),
   };
 }
-function date(value) {
+export function promotionDate(value) {
   check(
     typeof value === "string" &&
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?Z$/.test(value) &&
+      value >= "1000-01-01" &&
       Number.isFinite(Date.parse(value)),
     "Las fechas de promoción deben ser UTC válidas.",
   );
-  return new Date(value).toISOString().slice(0, 19).replace("T", " ");
+  const normalized = new Date(value).toISOString();
+  check(normalized.slice(0, 16) === value.slice(0, 16), "La fecha de promoción no existe.");
+  return normalized.slice(0, 19).replace("T", " ");
 }
 export async function saveProduct(pool, body, productId) {
   const price = cents(body.precio);
@@ -91,8 +94,8 @@ export async function saveProduct(pool, body, productId) {
       offer > 0 && offer < price,
       "La oferta debe ser menor al precio normal.",
     );
-    start = date(body.oferta_inicio);
-    end = date(body.oferta_fin);
+    start = promotionDate(body.oferta_inicio);
+    end = promotionDate(body.oferta_fin);
     check(end > start, "El fin de la oferta debe ser posterior al inicio.");
   }
   const values = [

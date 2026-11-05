@@ -20,6 +20,11 @@ export function configuration() {
       "Configura SESSION_SECRET con al menos 48 caracteres aleatorios en .env.",
     );
   const production = process.env.NODE_ENV === "production";
+  const port = Number(process.env.PORT || 3003);
+  const dbPort = Number(process.env.DB_PORT || 3306);
+  for (const [name, value] of [["PORT", port], ["DB_PORT", dbPort]])
+    if (!Number.isInteger(value) || value < (name === "PORT" ? 0 : 1) || value > 65535)
+      throw new Error(`${name} debe estar entre ${name === "PORT" ? 0 : 1} y 65535.`);
   if (production && publicUrl.protocol !== "https:")
     throw new Error("Producción requiere PUBLIC_URL con HTTPS.");
   const fee = process.env.DELIVERY_FEE;
@@ -31,10 +36,10 @@ export function configuration() {
     secret,
     production,
     host: process.env.HOST || "127.0.0.1",
-    port: Number(process.env.PORT || 3003),
+    port,
     db: {
       host: process.env.DB_HOST || "127.0.0.1",
-      port: Number(process.env.DB_PORT || 3306),
+      port: dbPort,
       user: process.env.DB_USER || "novaobra_tienda",
       password: process.env.DB_PASSWORD || "",
       database,

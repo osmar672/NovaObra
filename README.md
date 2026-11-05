@@ -1,5 +1,7 @@
 # NovaObra Tienda
 
+Correcciones y pruebas de la revisión actual: [revisión del 5 de noviembre](docs/revision-2026-11-05.md).
+
 Aplicación comercial en React/Vite, Express y MySQL 8. La tienda es la única aplicación del repositorio y utiliza una base de diez tablas. Su código está directamente en la raíz, sin carpeta `tienda/` adicional.
 
 ## Instalar en Windows

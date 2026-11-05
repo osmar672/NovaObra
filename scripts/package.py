@@ -2,7 +2,7 @@
 from pathlib import Path
 import zipfile
 root=Path(__file__).resolve().parents[1]
-out=root/'artifacts'/'NovaObra_Listo_1.1.zip'
+out=root/'artifacts'/'NovaObra_Revisado_1.2.zip'
 out.parent.mkdir(exist_ok=True)
 exclude={'.git','node_modules','dist','artifacts','__pycache__','.cache','test-results','playwright-report','backups','respaldos'}
 with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as z:

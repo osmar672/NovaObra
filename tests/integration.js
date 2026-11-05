@@ -4,6 +4,21 @@ import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { fixture, available } from "./helpers.js";
 import { setup, verifySchema } from "../backend/schema.js";
+test("Contraseñas con espacios: registro, login y cambio conservan el valor exacto", { skip: !available }, async () => {
+  const f = await fixture();
+  try {
+    const password = "  Mi contraseña de prueba  ";
+    const registered = await f.request("/api/auth/registro", { method: "POST", body: { nombre: "Espacios", email: "espacios@example.test", password } });
+    assert.equal(registered.status, 201);
+    const login = await f.request("/api/auth/login", { method: "POST", body: { email: "espacios@example.test", password } });
+    assert.equal(login.status, 200);
+    const nueva = " Nueva contraseña distinta ";
+    const changed = await f.request("/api/auth/password", { method: "PUT", cookie: login.cookie, body: { actual: password, nueva } });
+    assert.equal(changed.status, 200);
+    assert.equal((await f.request("/api/auth/login", { method: "POST", body: { email: "espacios@example.test", password: nueva } })).status, 200);
+    assert.equal((await f.request("/api/auth/login", { method: "POST", body: { email: "espacios@example.test", password: nueva.trim() } })).status, 401);
+  } finally { await f.close(); }
+});
 test(
   "Tienda con MySQL real: seguridad, catálogo, inventario y pedidos",
   { skip: !available },

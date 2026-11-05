@@ -4,6 +4,7 @@ import {
   text,
   email,
   password,
+  credential,
   transaction,
 } from "../lib/validation.js";
 import {
@@ -51,7 +52,7 @@ export function authRoutes(pool, config, access) {
   });
   router.post("/login", limiter, async (req, res) => {
     const mail = email(req.body.email),
-      pass = text(req.body.password, "Contraseña", 128);
+      pass = credential(req.body.password);
     const [[user]] = await pool.execute(
       "SELECT u.*,r.nombre AS rol FROM usuarios u JOIN roles r ON r.id=u.rol_id WHERE u.email=?",
       [mail],
@@ -86,7 +87,7 @@ export function authRoutes(pool, config, access) {
     );
     check(
       await verifyPassword(
-        text(req.body.actual, "Contraseña actual", 128),
+        credential(req.body.actual, "Contraseña actual"),
         user.password_hash,
       ),
       "Contraseña actual incorrecta.",

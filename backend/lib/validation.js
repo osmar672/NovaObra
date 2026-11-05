@@ -48,6 +48,13 @@ export function password(value) {
   );
   return value;
 }
+export function credential(value, name = "Contraseña") {
+  check(
+    typeof value === "string" && value.length > 0 && value.length <= 128,
+    `${name}: longitud no válida (máximo 128).`,
+  );
+  return value;
+}
 export function imageUrl(value = "") {
   const result = text(value, "Imagen", 1000, false);
   if (!result) return "";
