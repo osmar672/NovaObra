@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import {verifySchema} from '../schema.js';
 import {check} from '../middlewares/validaciones.js';
 const brandName='Catálogo de demostración';
-export async function addDemoCatalog(pool,database){
+export async function addDemoCatalog(pool,database,operatorId=null){
  const entries=JSON.parse(await readFile(new URL('../../../database/catalogo-demo.json',import.meta.url),'utf8'));
  const c=await pool.getConnection();let locked=false,started=false;
  const lock='novaobra_demo_'+createHash('sha256').update(database).digest('hex').slice(0,32);
@@ -12,7 +12,7 @@ export async function addDemoCatalog(pool,database){
   const [[result]]=await c.execute('SELECT GET_LOCK(?,10) AS acquired',[lock]);
   check(result.acquired===1,'Otra carga está en curso. Intenta nuevamente.',409);locked=true;
   await c.beginTransaction();started=true;
-  const [[operator]]=await c.query('SELECT id FROM usuarios WHERE activo=1 AND rol_id=1 ORDER BY id LIMIT 1 FOR SHARE');
+  const [[operator]]=operatorId?await c.execute('SELECT id FROM usuarios WHERE id=? AND activo=1 AND rol_id=1 FOR SHARE',[operatorId]):await c.query('SELECT id FROM usuarios WHERE activo=1 AND rol_id=1 ORDER BY id LIMIT 1 FOR SHARE');
   check(operator,'Primero crea el administrador web con npm run admin:create.');
   const lookup=async(table,name,description)=>{
    const [[existing]]=await c.execute(`SELECT id FROM ${table} WHERE nombre=?`,[name]);

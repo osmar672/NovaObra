@@ -23,11 +23,15 @@
     "https:setup": "node backend/scripts/https.js",
     "test:https": "node --test tests/https.js",
     "catalog:demo": "node backend/scripts/catalog-demo.js",
-    "test:demo": "node --test tests/demo-catalog.js"
+    "test:demo": "node --test tests/demo-catalog.js",
+    "google:configure": "node backend/scripts/google-configure.js",
+    "test:google": "node --test --test-concurrency=1 tests/google.js tests/storefront.js",
+    "test:google:ui": "node --test tests/google-ui.js"
   },
   "dependencies": {
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "google-auth-library": "^10.9.1",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.15.0",
     "react": "^19.2.0",

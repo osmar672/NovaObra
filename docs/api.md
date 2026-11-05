@@ -49,3 +49,19 @@ Se conservan `/admin/dashboard`, productos, categorías, marcas, inventario, cli
 ## Colección y pruebas
 
 `postman/Dia2.postman_collection.json`: 93 solicitudes. `npm run test:postman` la ejecuta con Newman contra una base temporal. `tests/day2.js` comprueba además las cuarenta combinaciones método/ruta con ausencia de token, firma manipulada, expiración real y algoritmo incorrecto.
+
+## Catálogo público
+
+Solo lectura, sin Bearer: `GET /tienda/categorias`, `/tienda/marcas`, `/tienda/productos` y `/tienda/productos/:id`. Los productos conservan los filtros y la paginación del catálogo; muestran únicamente productos, categorías y marcas activos. El DTO incluye identificación, descripción/especificaciones, imagen, precio actual, marca, categoría y existencia. No expone mínimos internos ni programación de ofertas futuras. Las mutaciones y todos los CRUD originales siguen protegidos.
+
+`POST /admin/catalogo-demo` requiere Bearer de administrador y cuerpo `{}`. Añade los SKU de ejemplo ausentes, con inventario e historial transaccionales; devuelve `{added,skipped,total,operatorId}`. Empleados y clientes reciben 403.
+
+## OAuth de Google
+
+- `GET /auth/options`: público; `{googleEnabled}` sin secretos.
+- `POST /auth/google/start`: Origin y cabecera CSRF; `{returnTo}` opcional, ruta local. Devuelve `{url}` para navegar a Google y establece una cookie HttpOnly transitoria.
+- `GET /auth/google/callback`: recibe código/state de Google, intercambia el código con PKCE y verifica el ID token. Emite la cookie de sesión propia y redirige a `/auth/google/complete`; los errores vuelven al login con un código fijo. No devuelve tokens en la URL.
+- `GET /auth/google/status`: Bearer; `{enabled,linked,localPassword}`.
+- `POST /auth/google/link`: Bearer, Origin y cabecera CSRF; `{password}` de la cuenta local actual. Devuelve `{url}` para confirmar la identidad con el mismo correo verificado. No vincula automáticamente por coincidencia de correo.
+
+Sin configuración Google, iniciar/vincular responde 503 y el login por contraseña continúa disponible. Las cuentas creadas exclusivamente con Google no admiten cambio de contraseña local. Véase [activación y límites de verificación](google-login.md).

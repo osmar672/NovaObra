@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
  nombre VARCHAR(120) NOT NULL,
  email VARCHAR(190) NOT NULL UNIQUE,
  password_hash VARCHAR(200) NOT NULL,
+ password_local BOOLEAN NOT NULL DEFAULT TRUE,
  activo BOOLEAN NOT NULL DEFAULT TRUE,
  version_sesion INT UNSIGNED NOT NULL DEFAULT 0,
  creado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -122,4 +123,12 @@ CREATE TABLE IF NOT EXISTS sesiones_refresh (
  FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
  INDEX ix_refresh_familia (familia),
  INDEX ix_refresh_expira (expira)
+) ENGINE=InnoDB;
+
+-- Identidad externa por subject de Google. Las cuentas existentes se conservan.
+CREATE TABLE IF NOT EXISTS identidades_google (
+ google_sub VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+ usuario_id INT UNSIGNED NOT NULL UNIQUE,
+ creado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 ) ENGINE=InnoDB;

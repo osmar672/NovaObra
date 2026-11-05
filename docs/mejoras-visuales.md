@@ -18,9 +18,9 @@ Las fotografías son recursos locales AVIF/WebP; no requieren conexiones externa
 
 ## Usuarios y administración
 
-Login/registro comparten una presentación con fotografía de herramientas y formularios legibles. El acceso restringido mantiene Esta zona necesita otro casco con una fotografía de protección y enlaces a catálogo/cuenta. No se cambian roles ni guards. El panel conserva sus datos reales y operaciones con navegación lateral oscura, tablas y métricas más claras.
+Login/registro comparten una presentación con fotografía de herramientas y formularios legibles. El acceso restringido mantiene Esta zona necesita otro casco con una fotografía de protección y enlaces a catálogo/cuenta. Se conservan los roles; el catálogo tiene rutas de lectura públicas y la compra y gestión mantienen sus controles. El panel conserva sus datos reales y operaciones con navegación lateral oscura, tablas y métricas más claras.
 
-La tienda sigue requiriendo iniciar sesión para consultar el catálogo, conforme a su configuración anterior. El inicio explica que la cuenta permite consultar precios, descripciones y existencias; no se publican precios inventados para visitantes.
+El catálogo y las fichas se pueden consultar sin iniciar sesión. El inicio obtiene los productos de MySQL mediante la API pública: muestra precio y descripción, filtros por departamento y estado vacío o error con reintento. Se eliminaron las seis tarjetas estáticas de departamentos.
 
 ## Verificación
 
@@ -28,7 +28,7 @@ Build de producción y seis pruebas existentes de navegador con MySQL real aprob
 
 Revisión de 21 vistas a 1440, 390 y 320 px, sin errores JavaScript ni desbordamiento horizontal. Se comprueba la carga y decodificación de todas las fotografías de cada vista. Se verifica una descripción larga contra la API, ausencia de recorte, legibilidad y precio mostrado idéntico al de MySQL/API en tarjeta y ficha. Los textos de prueba existen únicamente en una base temporal desechable.
 
-Los permisos, la autenticación, el esquema SQL y las dependencias se conservan. El backend añade el permiso CSP específico para el mapa y el servicio de carga opcional del catálogo. Para aplicar basta actualizar el código y ejecutar npm start. No hay que configurar otra base ni crear cuentas. En producción: npm run build antes de npm run serve.
+La revisión actual incorpora OAuth opcional de Google y una migración aditiva; consulta google-login.md y README. npm start prepara el esquema en desarrollo. En producción: npm run db:setup y npm run build antes de npm run serve.
 
 
 ## Catálogo ampliado y cuenta
@@ -37,9 +37,11 @@ Los permisos, la autenticación, el esquema SQL y las dependencias se conservan.
 - `npm run catalog:demo` añade únicamente los SKU que no existen. No restablece nombres, precios, estado activo ni inventario de registros anteriores.
 - Una transacción engloba categorías, marca, productos, inventario y movimientos iniciales. Un bloqueo por base serializa ejecuciones concurrentes. El responsable de los movimientos es el primer administrador web activo, indicado en la salida del comando. Sin administrador activo la carga no realiza cambios.
 - Cinco fotografías reales adicionales de lijadora, gafas, fijaciones, cinturón y armario, con créditos. Las fotos de referencia no garantizan el modelo vendido.
-- Navegación con selector de departamentos, categorías compactas y ocho destacados/ocho recientes. La cuenta muestra datos reales de perfil, pedidos, cotizaciones, favoritos y carrito, con accesos directos y seguridad.
+- Navegación con selector de departamentos y un bloque de descubrimiento con filtros y ocho productos de la API. La cuenta muestra datos reales de perfil, pedidos, cotizaciones, favoritos y carrito, con accesos directos y seguridad.
 - Las guías incorporan contenido estático sobre preparación de proyectos. No se inventan historia de la empresa, horarios ni datos de contacto.
 
 Verificación adicional: tres pruebas de carga con MySQL real (idempotencia/concurrencia y conservación de datos; administrador ausente; rollback de toda la carga). El comando CLI se ejecutó contra la base temporal de pruebas. Se revisaron 28 vistas a 1440, 390 y 320 px, incluida cuenta vacía y cuenta con pedido/cotización reales de prueba. Los contadores se contrastaron con esos registros. Se verificaron carga de fotos, navegación, descripciones y precios, y la apertura del iframe y CSP del mapa.
 
 Las teselas y el servicio externo de Google Maps requieren Internet y no se validaron externamente en este entorno de red restringida. La referencia de San José se identifica como demostración; no se presenta como una sucursal real.
+
+El administrador puede cargar los 48 ejemplos desde Inicio o Administración. El botón informa del resultado y recarga los datos; los visitantes no pueden ejecutar esta operación. Google solo presenta un botón operativo después de configurar el cliente OAuth; en caso contrario muestra su estado real.

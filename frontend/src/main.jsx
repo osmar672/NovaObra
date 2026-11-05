@@ -29,6 +29,7 @@ import Account from "./pages/Account.jsx";
 import { About, Contact, Guides, Favorites } from "./pages/Information.jsx";
 import "./styles.css";
 import "./professional.css";
+import {GoogleComplete} from './components/GoogleSignIn.jsx';
 const Admin = lazy(() => import("./pages/Admin.jsx"));
 function Scroll() {
   const { pathname } = useLocation();
@@ -54,9 +55,9 @@ function App() {
 <Route path="gestion/pedidos" element={<RutaProtegida management><Gestion_pedidos/></RutaProtegida>}/>
 <Route path="gestion/detalle_pedidos" element={<RutaProtegida management><Gestion_detalle_pedidos/></RutaProtegida>}/>
 <Route path="gestion/movimientos_inventario" element={<RutaProtegida management><Gestion_movimientos_inventario/></RutaProtegida>}/>
-            <Route path="login" element={<Login/>}/><Route path="registro" element={<Registro/>}/><Route path="catalogo" element={<RutaProtegida><Catalog /></RutaProtegida>} />
-            <Route path="ofertas" element={<RutaProtegida><Catalog offers /></RutaProtegida>} />
-            <Route path="producto/:id/:slug" element={<RutaProtegida><Product /></RutaProtegida>} />
+            <Route path="auth/google/complete" element={<GoogleComplete/>}/><Route path="login" element={<Login/>}/><Route path="registro" element={<Registro/>}/><Route path="catalogo" element={<Catalog />} />
+            <Route path="ofertas" element={<Catalog offers />} />
+            <Route path="producto/:id/:slug" element={<Product />} />
             <Route path="carrito" element={<RutaProtegida><Cart /></RutaProtegida>} />
             <Route path="cuenta" element={<Account />} />
             <Route path="nosotros" element={<About />} />

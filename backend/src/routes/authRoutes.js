@@ -1,8 +1,11 @@
+import {googleRoutes} from './googleRoutes.js';
 import { Router } from 'express';
 import { authController } from '../controllers/authController.js';
 import { loginLimiter } from '../middlewares/authMiddleware.js';
-export function authRoutes(pool, config, access) {
+export function authRoutes(pool, config, access, adapters={}) {
   const router = Router(), c = authController(pool, config), limiter = loginLimiter();
+  router.get('/options',(_req,res)=>res.json({googleEnabled:Boolean(config.google?.enabled)}));
+  router.use('/google',googleRoutes(pool,config,access,adapters));
   router.post(['/register', '/registro'], limiter, c.register);
   router.post('/login', limiter, c.login);
   router.post(['/refresh','/session'], access.cookieCsrf, c.session);

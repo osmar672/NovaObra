@@ -5,6 +5,7 @@ import { useData } from "../hooks/useData.js";
 import { api, money } from "../services/api.js";
 import { Feedback, Meta, PageHeading, Empty } from "../components/UI.jsx";
 import {Icon,AuthShell} from '../components/Visuals.jsx';
+import GoogleSignIn,{GoogleAccountConnection} from '../components/GoogleSignIn.jsx';
 export function OrderList({ orders }) {
   return (
     <div className="order-list">
@@ -42,6 +43,7 @@ export default function Account() {
     [register, setRegister] = useState(false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
+    [googleAccess,setGoogleAccess]=useState(null),
     navigate = useNavigate(),
     [params] = useSearchParams();
   const orders = useData(user ? "/pedidos" : null, { poll: true });
@@ -82,7 +84,7 @@ export default function Account() {
     }
   }
   if(!authReady)return <div className="container section"><Feedback loading/></div>;
-  if(!user)return <AuthShell register={register}><Meta title="Mi cuenta"/><Feedback error={error||authError}/>
+  if(!user)return <AuthShell register={register}><Meta title="Mi cuenta"/><Feedback error={error||authError}/><GoogleSignIn/>
           <form className="auth-fields" onSubmit={submit}>
             {register && (
               <label>
@@ -159,7 +161,8 @@ export default function Account() {
         {list.length?<OrderList orders={list}/>:orders.data&&<div className="account-empty"><div className="account-empty-icon"><Icon name="box" size={40}/></div><div><h3>Todo listo para tu primer proyecto</h3><p>Aún no tienes pedidos. Explora herramientas y materiales, prepara tu carrito y elige entre un pedido o una cotización.</p><Link className="button" to="/catalogo">Visita el catálogo <Icon name="arrow" size={17}/></Link></div></div>}
         </section>
         <section className="account-shortcuts"><Link to="/catalogo"><Icon name="tool"/><div><h3>Encuentra lo que necesitas</h3><p>Consulta precios, descripciones y existencias.</p></div><Icon name="arrow" size={17}/></Link><Link to="/contacto"><Icon name="user"/><div><h3>Prepara tu consulta</h3><p>Encuentra los canales de contacto de la tienda.</p></div><Icon name="arrow" size={17}/></Link></section>
-        <details id="account-security" className="panel password-panel"><summary><Icon name="shield" size={20}/>Cambiar contraseña</summary><p className="muted">Al actualizarla se cerrarán las sesiones actuales. Después podrás entrar con tu nueva contraseña.</p><form onSubmit={changePassword}><div className="two-columns"><label>Contraseña actual<input type="password" name="actual" required autoComplete="current-password"/></label><label>Contraseña nueva<input type="password" name="nueva" minLength={8} maxLength={128} required autoComplete="new-password"/></label></div><button disabled={busy}>Actualizar contraseña</button></form></details>
+        <GoogleAccountConnection onStatus={setGoogleAccess}/>
+        {googleAccess?.localPassword!==false&&<details id="account-security" className="panel password-panel"><summary><Icon name="shield" size={20}/>Cambiar contraseña</summary><p className="muted">Al actualizarla se cerrarán las sesiones actuales. Después podrás entrar con tu nueva contraseña.</p><form onSubmit={changePassword}><div className="two-columns"><label>Contraseña actual<input type="password" name="actual" required autoComplete="current-password"/></label><label>Contraseña nueva<input type="password" name="nueva" minLength={8} maxLength={128} required autoComplete="new-password"/></label></div><button disabled={busy}>Actualizar contraseña</button></form></details>}
       </div>
     </div>
   </div>;

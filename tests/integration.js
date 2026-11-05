@@ -39,7 +39,7 @@ test(
     });
     try {
       await t.test(
-        "Once tablas, relaciones y preparación repetible sin pérdida",
+        "Doce tablas, relaciones y preparación repetible sin pérdida",
         async () => {
           await verifySchema(pool, f.database);
           const [[before]] = await pool.query(

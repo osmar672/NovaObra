@@ -1,6 +1,6 @@
 # NovaObra Tienda — Mini Proyecto 1, Día 2
 
-Tienda existente de ferretería con Node.js/Express, React/Vite y MySQL 8. Se conservan las diez tablas originales y sus datos; se añade `sesiones_refresh` para renovar y revocar sesiones. La revisión añade JWT estándar, los endpoints de autenticación del PDF y los cinco endpoints de las ocho entidades empresariales. No incluye la investigación académica excluida por el usuario.
+Tienda existente de ferretería con Node.js/Express, React/Vite y MySQL 8. Se conservan las diez tablas originales y sus datos; se añaden `sesiones_refresh` para renovar y revocar sesiones e `identidades_google` para el acceso opcional con Google. La revisión añade JWT estándar, los endpoints de autenticación del PDF y los cinco endpoints de las ocho entidades empresariales. No incluye la investigación académica excluida por el usuario.
 
 ## Instalación y ejecución
 
@@ -15,7 +15,7 @@ npm run admin:create
 npm start
 ```
 
-`db:configure` pide el usuario administrador de MySQL y su contraseña sin mostrarla. Conserva la base `NovaObraTienda`, prepara sus once tablas y crea una cuenta MySQL limitada a esa base. Guarda la cuenta de aplicación y una clave JWT aleatoria en **`backend/.env`**, excluido de Git y del ZIP. No guarda la clave administrativa. No borra tablas ni registros; rechaza una base con tablas ajenas. Si ya existe un archivo de configuración local, se conserva su conexión antes de preparar la cuenta.
+`db:configure` pide el usuario administrador de MySQL y su contraseña sin mostrarla. Conserva la base `NovaObraTienda`, prepara sus doce tablas y crea una cuenta MySQL limitada a esa base. Guarda la cuenta de aplicación y una clave JWT aleatoria en **`backend/.env`**, excluido de Git y del ZIP. No guarda la clave administrativa. No borra tablas ni registros; rechaza una base con tablas ajenas. Si ya existe un archivo de configuración local, se conserva su conexión antes de preparar la cuenta.
 
 `admin:create` crea un administrador **web** con nombre, correo y contraseña elegidos localmente. El usuario web es distinto del usuario MySQL. No hay una contraseña web predeterminada. Las cuentas ya existentes siguen funcionando con su hash anterior.
 
@@ -25,7 +25,7 @@ La instalación y las pruebas se ejecutaron en Linux. Windows y macOS requieren 
 
 ### Actualizar desde una versión anterior
 
-Ejecuta `npm run db:setup` después de actualizar: añade únicamente la tabla técnica `sesiones_refresh` con `CREATE TABLE IF NOT EXISTS`, sin borrar los datos. Si ya tienes un `.env` en la raíz, puedes copiarlo a `backend/.env` y conservarlo fuera de Git. Renombra `SESSION_SECRET` a `JWT_SECRET`, manteniendo su valor si tiene al menos 48 caracteres aleatorios. Se admite temporalmente el nombre anterior para compatibilidad; los ejemplos nuevos usan `JWT_SECRET`.
+En desarrollo, `npm start` prepara las tablas técnicas que faltan y añade `usuarios.password_local` conservando las cuentas y sus contraseñas. También puedes ejecutar `npm run db:setup` explícitamente; en producción ejecútalo antes de arrancar el servidor. No borra registros ni carga ejemplos automáticamente. Si ya tienes un `.env` en la raíz, puedes copiarlo a `backend/.env` y conservarlo fuera de Git. Renombra `SESSION_SECRET` a `JWT_SECRET`, manteniendo su valor si tiene al menos 48 caracteres aleatorios. Se admite temporalmente el nombre anterior para compatibilidad; los ejemplos nuevos usan `JWT_SECRET`.
 
 Las sesiones antiguas con el token HMAC propio dejan de ser válidas: vuelve a iniciar sesión para recibir un JWT estándar. Las cuentas, perfiles, pedidos y contraseñas no se eliminan.
 
@@ -65,8 +65,18 @@ Añade 48 productos en ocho departamentos, con descripciones, precios en CRC, in
 
 El comando no borra ni reemplaza tus productos y puede repetirse: conserva los registros existentes y las ediciones posteriores de precios, nombres y stock. La carga es transaccional y registra un movimiento de inventario por producto, usando como responsable al primer administrador web activo. Si no existe uno, ejecuta `npm run admin:create`. No crea usuarios, pedidos ni tablas nuevas.
 
-El menú Departamentos permite consultar todas las categorías; el inicio muestra seis accesos compactos, hasta ocho destacados y ocho productos recientes. La cuenta incluye pedidos, cotizaciones, favoritos, carrito y seguridad. El mapa se carga con **Cargar mapa interactivo** y requiere Internet; San José sigue siendo una ubicación de demostración.
+También puedes iniciar sesión como administrador y pulsar **Cargar 48 productos de ejemplo** en Inicio o Administración. La interfaz informa cuántos se añadieron y cuántos se conservaron.
 
+El catálogo, las fichas y el inicio consultan productos reales de la base sin exigir sesión. El inicio muestra filtros por departamento, hasta ocho productos con precio y descripción y un enlace al catálogo completo. Si no hay productos, muestra un estado vacío; no sustituye los datos por tarjetas estáticas. La cuenta incluye pedidos, cotizaciones, favoritos, carrito y seguridad. El mapa se carga con **Cargar mapa interactivo** y requiere Internet; San José sigue siendo una ubicación de demostración.
+
+
+## Inicio de sesión con Google
+
+La integración usa OAuth 2.0 con código de autorización, PKCE, state y nonce, y valida el ID token con `google-auth-library`. Crea una sesión propia de NovaObra con la misma cookie HttpOnly y JWT de acceso del login normal.
+
+**Debes crear tu propio cliente OAuth web en Google Cloud para activarla.** No basta con un botón ni con una API key. Sigue [la guía de Google](docs/google-login.md) y ejecuta `npm run google:configure` desde la raíz. El asistente guarda ID y secreto únicamente en `backend/.env`; reinicia la aplicación. Sin credenciales válidas, el acceso por contraseña sigue disponible y se indica que Google no está habilitado.
+
+Una cuenta nueva de Google recibe rol cliente. Si su correo ya existe, inicia sesión por contraseña y vincúlala desde Cuenta confirmando esa contraseña. No se unen cuentas automáticamente por correo. Google administra la contraseña de las cuentas creadas exclusivamente con Google.
 
 ## Autenticación
 
@@ -178,3 +188,9 @@ El código de backend reside en `backend/src/{models,controllers,routes,middlewa
 - [Limitaciones y pendientes](docs/pendientes.md).
 
 Para generar el ZIP sin secretos ni dependencias: `python scripts/package.py`.
+
+### Catálogo público y pruebas de Google
+
+`GET /api/tienda/categorias`, `/marcas`, `/productos` y `/productos/:id` son lecturas públicas del catálogo activo. No exponen clientes, cuentas, mínimos de inventario ni promociones futuras. Los CRUD originales siguen requiriendo Bearer y sus roles. `POST /api/admin/catalogo-demo` requiere administrador.
+
+`npm run test:google` prueba catálogo público, migración, PKCE, state/nonce, firma, audiencia, expiración y vinculación. `npm run test:google:ui` prueba el recorrido completo en Chromium con el transporte de Google simulado y verificación RSA real de la biblioteca oficial. Estas pruebas no equivalen a un inicio de sesión externo con credenciales reales de Google Cloud.

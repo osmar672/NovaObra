@@ -1,3 +1,4 @@
+import {addDemoCatalog} from '../services/demoCatalog.js';
 import { Router } from "express";
 import {
   check,
@@ -9,9 +10,13 @@ import {
 } from "../middlewares/validaciones.js";
 import { catalog, saveProduct } from "../services/catalog.js";
 import { orders, transition } from "../services/orders.js";
-export function adminRoutes(pool, access) {
+export function adminRoutes(pool, access, config) {
   const router = Router();
   router.use(...access.roles("administrador", "empleado"));
+  router.post('/catalogo-demo',async(req,res)=>{
+    check(req.user.rol==='administrador','Solo el administrador puede cargar los ejemplos.',403);
+    res.json(await addDemoCatalog(pool,config.database,req.user.id));
+  });
   router.get("/dashboard", async (req, res) => {
     const [[stats]] = await pool.query(
       "SELECT (SELECT COUNT(*) FROM productos WHERE activo=1) AS productos,(SELECT COUNT(*) FROM pedidos WHERE tipo='pedido' AND estado IN ('pendiente','confirmado','preparando','listo','enviado')) AS pendientes,(SELECT COUNT(*) FROM inventario WHERE existencia<=minimo) AS bajos,(SELECT COALESCE(SUM(d.cantidad*d.precio_unitario),0) FROM detalle_pedidos d JOIN pedidos p ON p.id=d.pedido_id WHERE p.tipo='pedido' AND p.estado='entregado') AS ventas",
