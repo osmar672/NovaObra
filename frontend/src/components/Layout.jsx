@@ -10,15 +10,15 @@ export default function Layout() {
     navigate = useNavigate(),route=useLocation();
   React.useEffect(()=>{setOpen(false);document.querySelector(".departments-menu")?.removeAttribute("open");},[route.pathname,route.search]);
   React.useEffect(()=>{const close=event=>{const menu=document.querySelector(".departments-menu");if(menu&&!menu.contains(event.target))menu.removeAttribute("open");};document.addEventListener("pointerdown",close);return()=>document.removeEventListener("pointerdown",close);},[]);
-  const { data: categories } = useData(user ? "/categorias" : null);
+  const { data: categories } = useData("/tienda/categorias");
   const [suggestionTerm, setSuggestionTerm] = useState("");
   React.useEffect(() => {
     const timer = setTimeout(() => setSuggestionTerm(search.trim()), 300);
     return () => clearTimeout(timer);
   }, [search]);
   const { data: suggestions } = useData(
-    user && suggestionTerm.length >= 2
-      ? `/productos?q=${encodeURIComponent(suggestionTerm)}`
+    suggestionTerm.length >= 2
+      ? `/tienda/productos?q=${encodeURIComponent(suggestionTerm)}`
       : null,
   );
   return (

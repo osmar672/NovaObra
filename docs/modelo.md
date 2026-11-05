@@ -1,12 +1,13 @@
 # Modelo relacional de la tienda
 
-Base predeterminada `NovaObraTienda`. El esquema está en `database/schema.sql`; el asistente selecciona la base antes de ejecutarlo. No ejecutarlo dentro de una base ajena a esta tienda. MySQL 8.0.16+, InnoDB, claves foráneas activas, UTF-8. La tabla técnica adicional sesiones_refresh guarda hashes, familias, expiración, consumo y revocación.
+Base predeterminada `NovaObraTienda`. El esquema está en `database/schema.sql`; el asistente selecciona la base antes de ejecutarlo. No ejecutarlo dentro de una base ajena a esta tienda. MySQL 8.0.16+, InnoDB, claves foráneas activas, UTF-8. El esquema tiene doce tablas. identidades_google relaciona un sub de Google único con un solo usuario; no guarda tokens de Google. usuarios.password_local distingue el acceso por contraseña. La tabla técnica sesiones_refresh guarda hashes, familias, expiración, consumo y revocación.
 
 ```mermaid
 erDiagram
   roles ||--o{ usuarios : autoriza
   usuarios ||--o| clientes : perfil
   usuarios ||--o{ sesiones_refresh : sesiones
+  usuarios ||--o| identidades_google : identidad
   categorias ||--o{ productos : clasifica
   marcas ||--o{ productos : identifica
   productos ||--|| inventario : existencias
@@ -20,9 +21,10 @@ erDiagram
 
 | Tabla | Responsabilidad y restricciones |
 | --- | --- |
+| identidades_google | sub de Google como PK binaria, usuario único como FK y fecha de vinculación |
 | sesiones_refresh | Hash único SHA-256 de token opaco, familia, versión, vencimiento, consumo y revocación; FK a usuarios |
 | roles | Tres roles: administrador, empleado y cliente; nombre único |
-| usuarios | Nombre, email único, hash scrypt, rol, acceso activo y versión de sesión |
+| usuarios | Nombre, email único, hash scrypt, rol, acceso activo, indicador de contraseña local y versión de sesión |
 | clientes | Perfil opcional 1:1 de usuario; teléfono y dirección de contacto |
 | categorias | Nombre único, descripción y estado activo |
 | marcas | Nombre único, descripción y estado activo |

@@ -13,9 +13,9 @@ export default function Catalog({ offers = false }) {
   const [params, setParams] = useSearchParams(),
     query = new URLSearchParams(params);
   if (offers) query.set("ofertas", "1");
-  const products = useData(`/productos?${query}`, { poll: true }),
-    categories = useData("/categorias"),
-    brands = useData("/marcas");
+  const products = useData(`/tienda/productos?${query}`, { poll: true }),
+    categories = useData("/tienda/categorias"),
+    brands = useData("/tienda/marcas");
   const change = (key, value) => {
     const next = new URLSearchParams(params);
     value ? next.set(key, value) : next.delete(key);

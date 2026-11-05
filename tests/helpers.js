@@ -6,7 +6,7 @@ import { createApp } from "../backend/src/app.js";
 import { hashPassword } from "../backend/src/middlewares/authMiddleware.js";
 import { createPool } from "../backend/src/db.js";
 export const available = !!process.env.NOVAOBRA_TEST_ADMIN_FILE;
-export async function fixture({ seed = true, overrides = {} } = {}) {
+export async function fixture({ seed = true, overrides = {}, adapters = {} } = {}) {
   const credentials = JSON.parse(
     await readFile(process.env.NOVAOBRA_TEST_ADMIN_FILE, "utf8"),
   );
@@ -51,7 +51,7 @@ export async function fixture({ seed = true, overrides = {} } = {}) {
     };
     Object.assign(config,overrides);
     const tokens=new Map();
-    const app = createApp(pool, config);
+    const app = createApp(pool, config, adapters);
     server = await new Promise((resolve) => {
       const s = app.listen(0, "127.0.0.1", () => resolve(s));
     });

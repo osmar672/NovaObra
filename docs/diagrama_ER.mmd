@@ -9,6 +9,7 @@ erDiagram
     varchar nombre
     varchar email UK
     varchar password_hash
+    boolean password_local
     boolean activo
     int version_sesion
     timestamp creado
@@ -109,3 +110,10 @@ erDiagram
     datetime revocado
   }
   usuarios ||--o{ sesiones_refresh : "usuario_id"
+
+  identidades_google {
+    varchar google_sub PK
+    int usuario_id FK,UK
+    timestamp creado
+  }
+  usuarios ||--o| identidades_google : "usuario_id"

@@ -44,11 +44,15 @@ export function configuration() {
   const refreshTokenSeconds=Number(process.env.REFRESH_TOKEN_TTL_SECONDS||604800);
   if(!Number.isInteger(accessTokenSeconds)||accessTokenSeconds<30||accessTokenSeconds>3600)throw new Error('ACCESS_TOKEN_TTL_SECONDS: 30 a 3600.');
   if(!Number.isInteger(refreshTokenSeconds)||refreshTokenSeconds<86400||refreshTokenSeconds>2592000)throw new Error('REFRESH_TOKEN_TTL_SECONDS: 86400 a 2592000.');
+  const googleClientId=(process.env.GOOGLE_CLIENT_ID||'').trim(),googleClientSecret=(process.env.GOOGLE_CLIENT_SECRET||'').trim();
+  if(Boolean(googleClientId)!==Boolean(googleClientSecret))throw new Error('Completa GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET, o deja ambos vacíos.');
+  if(googleClientId&&!/^[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/.test(googleClientId))throw new Error('GOOGLE_CLIENT_ID no válido.');
+  const google={enabled:Boolean(googleClientId&&googleClientSecret),clientId:googleClientId,clientSecret:googleClientSecret,redirectUri:publicUrl.origin+'/api/auth/google/callback'};
   const fee = process.env.DELIVERY_FEE;
   if (fee && !/^\d{1,8}(\.\d{1,2})?$/.test(fee))
     throw new Error("DELIVERY_FEE no válido.");
   return {
-    accessTokenSeconds,refreshTokenSeconds,trustProxy,redirectPort,
+    accessTokenSeconds,refreshTokenSeconds,trustProxy,redirectPort,google,
     tls:cert?{cert:resolve(root,cert),key:resolve(root,key)}:null,
     secureCookies:publicUrl.protocol==='https:',
     database,

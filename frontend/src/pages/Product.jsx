@@ -8,7 +8,7 @@ import {productDescription,productPrice} from '../services/presentation.js';
 import {Icon} from '../components/Visuals.jsx';
 export default function Product() {
   const { id } = useParams(),
-    state = useData(`/productos/${id}`, { poll: true }),
+    state = useData(`/tienda/productos/${id}`, { poll: true }),
     { add, favorites, favorite, setNotice } = useShop(),
     p = state.data;
   const price=p?productPrice(p):null;

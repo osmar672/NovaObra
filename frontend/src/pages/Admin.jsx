@@ -6,6 +6,7 @@ import { api, money } from "../services/api.js";
 import { Feedback, Meta, PageHeading, Empty } from "../components/UI.jsx";
 import { OrderList } from "./Account.jsx";
 import {AccessRestricted,Icon} from '../components/Visuals.jsx';
+import DemoCatalogButton from '../components/DemoCatalogButton.jsx';
 function useMutation(reload) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -48,6 +49,7 @@ function Dashboard() {
   const state = useData("/admin/dashboard", { poll: true });
   return (
     <>
+      <DemoCatalogButton onLoaded={state.reload}/>
       <Feedback {...state} />
       {state.data && (
         <>

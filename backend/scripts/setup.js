@@ -12,7 +12,7 @@ try {
     seed: process.argv.includes("--demo"),
   });
   console.log(
-    "Tienda preparada: 11 tablas. Los ejemplos solo se cargan al usar --demo.",
+    "Tienda preparada: 12 tablas. Los ejemplos solo se cargan al usar --demo.",
   );
 } catch (error) {
   console.error("No se pudo preparar la tienda:", error.code || error.message);

@@ -1,3 +1,4 @@
+import {storefrontRoutes} from './routes/storefrontRoutes.js';
 import register_categorias from './routes/categoriasRoutes.js';
 import register_marcas from './routes/marcasRoutes.js';
 import register_productos from './routes/productosRoutes.js';
@@ -35,7 +36,7 @@ export const slug = (value) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-export function createApp(pool, config) {
+export function createApp(pool, config, adapters={}) {
   const app = express(),
     access = auth(pool, config);
   app.disable("x-powered-by");
@@ -43,7 +44,7 @@ export function createApp(pool, config) {
   if(config.production)app.use((req,res,next)=>req.secure?next():res.status(400).json({error:'Se requiere HTTPS.'}));
   app.use('/api', (req,res,next) => {
     if (req.method==='OPTIONS') return next();
-    if (/^\/(auth|health|config)(?:\/|$)/.test(req.path)) return next();
+    if (/^\/(auth|health|config|tienda)(?:\/|$)/.test(req.path)) return next();
     return access.requireBearer(req,res,next);
   });
   app.use((req, res, next) => {
@@ -106,7 +107,8 @@ export function createApp(pool, config) {
     res.json({ ok: true });
   });
   app.get("/api/config", (_req, res) => res.json(config.business));
-  app.use("/api/auth", authRoutes(pool, config, access));
+  app.use("/api/auth", authRoutes(pool, config, access, adapters));
+  app.use("/api/tienda",storefrontRoutes(pool));
   for (const table of ["categorias", "marcas"])
     app.get(`/api/${table}`, async (req, res) => {
       const [rows] = await pool.query(
@@ -133,7 +135,7 @@ export function createApp(pool, config) {
     const result = await createOrder(pool, config, req.user, req.body);
     res.status(result.repetido ? 200 : 201).json(result);
   });
-  app.use("/api/admin", adminRoutes(pool, access));
+  app.use("/api/admin", adminRoutes(pool, access, config));
   app.get('/api/referencias', ...access.roles('administrador','empleado'), async(req,res) => {
     const result={};
     for(const table of ['categorias','marcas','productos','usuarios','clientes','pedidos']) {

@@ -37,6 +37,14 @@ function launch(args) {
     if (!closing) { console.error("Un servicio terminó inesperadamente."); void stop(1); }
   });
 }
+function runTask(args){
+ return new Promise((resolve,reject)=>{
+  if(closing)return reject(new Error('Inicio interrumpido.'));
+  const child=spawn(process.execPath,args,{cwd,stdio:['inherit','inherit','inherit'],env:process.env});children.add(child);
+  child.once('error',error=>{children.delete(child);reject(error);});
+  child.once('close',code=>{children.delete(child);if(code===0)resolve();else reject(new Error('No se pudo preparar el proyecto. Revisa el mensaje anterior.'));});
+ });
+}
 function freePort(host, port) {
   return new Promise((resolve, reject) => {
     const server = createServer();
@@ -65,7 +73,8 @@ try {
   if(config.tls){
     await freePort(config.host,config.port);
     if(config.redirectPort)await freePort(config.host,config.redirectPort);
-    await new Promise((resolve,reject)=>{const build=spawn(process.execPath,['node_modules/vite/bin/vite.js','build','--config','frontend/vite.config.js'],{cwd,stdio:'inherit'});build.once('error',reject);build.once('exit',code=>code===0?resolve():reject(new Error('Falló la compilación.')));});
+    if(!config.production)await runTask(['backend/scripts/setup.js']);
+    await runTask(['node_modules/vite/bin/vite.js','build','--config','frontend/vite.config.js']);
     localCa=await readFile(config.tls.cert);
     launch(['backend/src/server.js']);
     await ready(config.publicUrl+'/api/health');
@@ -78,6 +87,7 @@ try {
   if (config.port === 0) throw new Error("El iniciador necesita un PORT fijo entre 1 y 65535.");
   await freePort(config.host, config.port);
   await freePort("127.0.0.1", 5174);
+  await runTask(["backend/scripts/setup.js"]);
   launch(["backend/src/server.js"]);
   await ready(`http://${config.host}:${config.port}/api/health`);
   launch(["node_modules/vite/bin/vite.js", "--config", "frontend/vite.config.js", "--clearScreen", "false"]);

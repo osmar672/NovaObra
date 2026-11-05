@@ -44,8 +44,9 @@ export function authController(pool, config) {
       const { hashPassword } = await import('../middlewares/authMiddleware.js');
       const nextHash=await hashPassword(password(req.body.nueva));
       await transaction(pool,async c=>{
-        const [[user]]=await c.execute('SELECT password_hash,version_sesion FROM usuarios WHERE id=? FOR UPDATE',[req.user.id]);
+        const [[user]]=await c.execute('SELECT password_hash,password_local,version_sesion FROM usuarios WHERE id=? FOR UPDATE',[req.user.id]);
         check(user&&user.version_sesion===req.user.version_sesion,'No autorizado',401);
+        check(user.password_local,'Esta cuenta utiliza Google para iniciar sesión. Gestiona la contraseña desde Google.',400);
         check(await verifyPassword(credential(req.body.actual),user.password_hash),'Contraseña actual incorrecta.');
         await c.execute('UPDATE usuarios SET password_hash=?,version_sesion=version_sesion+1 WHERE id=?',[nextHash,req.user.id]);
         await revokeUserSessions(c,req.user.id);
