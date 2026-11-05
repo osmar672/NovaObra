@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useShop } from "../context/ShopContext.jsx";
 import { useData } from "../hooks/useData.js";
 import {Icon} from './Visuals.jsx';
@@ -7,7 +7,9 @@ export default function Layout() {
   const { user, cart, notice } = useShop(),
     [open, setOpen] = useState(false),
     [search, setSearch] = useState(""),
-    navigate = useNavigate();
+    navigate = useNavigate(),route=useLocation();
+  React.useEffect(()=>{setOpen(false);document.querySelector(".departments-menu")?.removeAttribute("open");},[route.pathname,route.search]);
+  React.useEffect(()=>{const close=event=>{const menu=document.querySelector(".departments-menu");if(menu&&!menu.contains(event.target))menu.removeAttribute("open");};document.addEventListener("pointerdown",close);return()=>document.removeEventListener("pointerdown",close);},[]);
   const { data: categories } = useData(user ? "/categorias" : null);
   const [suggestionTerm, setSuggestionTerm] = useState("");
   React.useEffect(() => {
@@ -106,19 +108,15 @@ export default function Layout() {
           id="main-nav"
           className={`main-nav ${open ? "open" : ""}`}
           aria-label="Principal"
-          onClick={() => setOpen(false)}
+          onClick={event=>{if(event.target.closest("a"))setOpen(false);}}
         >
           <div className="container">
             <NavLink to="/" end>
-              Inicio
+              <Icon name="grid" size={16}/> Inicio
             </NavLink>
-            <NavLink to="/catalogo">Catálogo</NavLink>
-            {categories?.slice(0, 6).map((c) => (
-              <Link key={c.id} to={`/catalogo?categoria=${c.id}`}>
-                {c.nombre}
-              </Link>
-            ))}
-            <NavLink to="/ofertas">Ofertas</NavLink>
+            <NavLink to="/catalogo"><Icon name="tool" size={16}/> Catálogo</NavLink>
+            <details className="departments-menu" onKeyDown={event=>{if(event.key==="Escape"){event.currentTarget.removeAttribute("open");event.currentTarget.querySelector("summary")?.focus();}}}><summary><Icon name="grid" size={17}/> Departamentos <span aria-hidden="true">⌄</span></summary><div className="departments-dropdown"><strong>Encuentra tu departamento</strong>{categories?.length?categories.map(c=><Link key={c.id} to={`/catalogo?categoria=${c.id}`} onClick={event=>event.currentTarget.closest('details').removeAttribute('open')}>{c.nombre}<Icon name="arrow" size={15}/></Link>):<Link to="/catalogo">Explorar herramientas y materiales <Icon name="arrow" size={15}/></Link>}</div></details>
+            <NavLink to="/ofertas"><Icon name="box" size={16}/> Ofertas</NavLink>
             <NavLink to="/nosotros">Nosotros</NavLink>
             <NavLink to="/contacto">Contacto</NavLink>
             {user&&user.rol!=="cliente"&&<NavLink className="nav-admin" to="/admin"><Icon name="grid" size={15}/> Panel de administración</NavLink>}

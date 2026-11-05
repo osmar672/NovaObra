@@ -21,7 +21,9 @@
     "postinstall": "node tests/apply-security-patches.cjs",
     "audit:deps": "npm audit && npm audit --omit=dev",
     "https:setup": "node backend/scripts/https.js",
-    "test:https": "node --test tests/https.js"
+    "test:https": "node --test tests/https.js",
+    "catalog:demo": "node backend/scripts/catalog-demo.js",
+    "test:demo": "node --test tests/demo-catalog.js"
   },
   "dependencies": {
     "dotenv": "^17.2.0",

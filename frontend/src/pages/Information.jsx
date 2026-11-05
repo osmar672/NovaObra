@@ -10,7 +10,7 @@ import {
   Empty,
   ProductCard,
 } from "../components/UI.jsx";
-import {LocationMap} from '../components/Visuals.jsx';
+import {LocationMap,Icon} from '../components/Visuals.jsx';
 export function About() {
   const state = useData("/config");
   return (
@@ -23,12 +23,7 @@ export function About() {
         {state.data?.about ||
           "Consulta nuestro catálogo de herramientas, materiales y accesorios. Puedes preparar pedidos y solicitar cotizaciones para tu proyecto."}
       </p>
-      {!state.data?.about && (
-        <p className="muted">
-          La historia, misión y visión de la empresa están pendientes de
-          publicación por la ferretería.
-        </p>
-      )}
+      <div className="about-highlights">{[['tool','Tu taller, a tu medida','Encuentra herramientas manuales, equipos de trabajo y accesorios para organizar tus proyectos.'],['list','Una lista bien preparada','Compara productos, guarda favoritos y reúne los materiales que necesitas antes de enviar tu solicitud.'],['box','Cada proyecto, en orden','Revisa tus pedidos y cotizaciones desde tu cuenta y consulta el estado de cada solicitud.']].map(([icon,title,text])=><div key={title}><Icon name={icon}/><h3>{title}</h3><p>{text}</p></div>)}</div>
       <Link className="button" to="/contacto">
         Contactar con la tienda →
       </Link>
@@ -118,20 +113,11 @@ export function Contact() {
   );
 }
 export function Guides() {
-  return (
-    <div className="container section narrow">
-      <Meta title="Guías y capacitación" />
-      <PageHeading eyebrow="APRENDE Y CONSTRUYE" title="Guías y capacitación" />
-      <Empty>
-        Los videos, podcasts y eventos estarán disponibles cuando la ferretería
-        publique su contenido. Este módulo está pendiente de integración.
-      </Empty>
-      <p>
-        Consulta los manuales del fabricante y utiliza el equipo de protección
-        correspondiente a cada herramienta.
-      </p>
-    </div>
-  );
+ return <div className="container section"><Meta title="Guías y capacitación"/><PageHeading eyebrow="ANTES DE EMPEZAR" title="Prepara mejor tu próximo proyecto"><p>Una buena lista, las herramientas adecuadas y un espacio organizado hacen más sencillo empezar.</p></PageHeading><div className="guide-grid">{[
+ ['01','Elige tu herramienta',['Define la tarea y el material que vas a trabajar.','Consulta la descripción y las especificaciones del producto.','Revisa accesorios compatibles y equipo de protección.'],'/catalogo','Explorar herramientas'],
+ ['02','Prepara tu lista de materiales',['Toma medidas y anota las cantidades que necesitas.','Agrega productos al carrito y revisa las existencias.','Elige una cotización si aún estás comparando opciones.'],'/carrito','Preparar mi lista'],
+ ['03','Organiza tu espacio de trabajo',['Despeja y prepara una superficie estable.','Revisa el estado de cada herramienta antes de usarla.','Consulta el manual del fabricante y utiliza la protección apropiada.'],'/catalogo?q=seguridad','Ver equipo de protección']
+ ].map(([n,title,steps,to,label])=><article key={n}><span className="step-number">{n}</span><h2>{title}</h2><ol>{steps.map(step=><li key={step}>{step}</li>)}</ol><Link to={to}>{label} →</Link></article>)}</div><div className="project-banner"><div><span className="eyebrow">CADA DETALLE CUENTA</span><h2>¿Tienes dudas sobre un producto?</h2><p>Consulta los datos de la ficha y prepara tu solicitud para la tienda.</p></div><Link className="button" to="/contacto">Preparar consulta →</Link></div></div>;
 }
 export function Favorites() {
   const { favorites } = useShop(),

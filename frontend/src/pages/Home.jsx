@@ -42,38 +42,24 @@ export default function Home() {
               <span>03 / Crea</span>
             </div>
           </div>
-          <div className="hero-visual"><img src="/photos/workbench.avif" alt="Fotografía de un banco de carpintería con herramientas reales" fetchPriority="high" width="960" height="920"/><div className="hero-image-caption"><span className="caption-icon"><Icon name="tool"/></span><div><strong>De la idea a la obra.</strong><span>Encuentra con qué hacerlo posible.</span></div><span className="caption-number">01 —</span></div><span className="hero-vertical-label">NOVAOBRA / HECHO PARA CONSTRUIR</span></div>
+          <div className="hero-visual"><img src="/photos/workbench.avif" alt="Fotografía de un banco de carpintería con herramientas reales" fetchPriority="high" width="960" height="920"/><span className="hero-photo-label">TALLER · HERRAMIENTAS · PROYECTOS</span></div>
         </div>
       </section>
-      <div className="value-strip container">
-        <div>
-          <Icon name="box"/><b>Disponibilidad real</b>
-          <span>Existencias consultadas en la tienda</span>
-        </div>
-        <div>
-          <Icon name="list"/><b>Compra a tu ritmo</b>
-          <span>Guarda favoritos y prepara tu carrito</span>
-        </div>
-        <div>
-          <Icon name="pin"/><b>Retiro en tienda</b>
-          <span>Consulta el estado de tu pedido</span>
-        </div>
-      </div>
+      <div className="shopping-steps container">{[['01','Elige tus materiales','Consulta fotos, precios y descripciones.','tool'],['02','Prepara tu lista','Agrega productos o guarda tus favoritos.','list'],['03','Envía tu solicitud','Pide una cotización y consulta su estado.','box']].map(([number,title,text,icon])=><div key={number}><span className="step-number">{number}</span><div><strong>{title}</strong><p>{text}</p></div><Icon name={icon}/></div>)}</div>
       <section className="container section">
         <div className="section-heading">
           <div>
             <span className="eyebrow">ENCUENTRA LO QUE NECESITAS</span>
-            <h2>Una solución para cada proyecto</h2>
+            <h2>Compra por departamento</h2>
           </div>
           <Link to="/catalogo">Ver catálogo →</Link>
         </div>
         <Feedback {...categories} />
         <div className="category-grid">
-          {displayedCategories.map((c, i) => (
+          {displayedCategories.slice(0,6).map((c, i) => (
             <Link to={c.id?`/catalogo?categoria=${c.id}`:'/catalogo'} key={c.id||c.nombre}>
               <img src={photoPath(c.visual||productVisual({nombre:c.nombre}))} alt="" loading="lazy" width="640" height="480"/><span className="category-number">0{i + 1}</span>
-              <h3>{c.nombre}</h3>
-              <p>{c.descripcion}</p>
+              <div className="department-copy"><h3>{c.nombre}</h3><p>{c.descripcion||"Explora este departamento"}</p></div>
               <span aria-hidden="true">→</span>
             </Link>
           ))}
@@ -85,13 +71,14 @@ export default function Home() {
             <div>
               <span className="eyebrow">SELECCIONADOS PARA TI</span>
               <h2>Productos destacados</h2>
+              {latest.data&&<p className="catalog-totals"><strong>{latest.data.total}</strong> productos en el catálogo · <strong>{categories.data?.length||0}</strong> departamentos</p>}
             </div>
             <Link to="/catalogo">Ver todos →</Link>
           </div>
           <Feedback {...featured} />
           {!user&&<div className="catalog-invitation"><img src="/photos/drill.webp" alt="Fotografía de un taladro real sobre fondo blanco" loading="lazy"/><div><span className="eyebrow">PREPARA TU PRÓXIMO PROYECTO</span><h3>Encuentra tu próxima herramienta.</h3><p>Inicia sesión para ver el catálogo con sus precios, descripciones y existencias. Usa tu cuenta de siempre.</p><Link className="button" to="/login">Entrar al catálogo <Icon name="arrow"/></Link></div></div>}
           <div className="product-grid">
-            {featured.data?.items.slice(0, 4).map((p) => (
+            {featured.data?.items.slice(0, 8).map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
@@ -127,7 +114,7 @@ export default function Home() {
         </div>
         <Feedback {...latest} />
         <div className="product-grid">
-          {latest.data?.items.slice(0, 4).map((p) => (
+          {latest.data?.items.slice(0, 8).map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
