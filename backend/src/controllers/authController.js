@@ -29,6 +29,7 @@ export function authController(pool, config) {
       respond(res, user);
     },
     me: (req, res) => res.json(publicUser(req.user)),
+    session: (req, res) => res.json({ token: req.authToken, usuario: publicUser(req.user) }),
     logout: async (req, res) => {
       await pool.execute('UPDATE usuarios SET version_sesion=version_sesion+1 WHERE id=?', [req.user.id]);
       sessionCookie(res, '', config.production, true); res.json({ ok: true });

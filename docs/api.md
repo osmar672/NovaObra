@@ -9,6 +9,7 @@ Base local: `http://127.0.0.1:3003/api`. Respuestas JSON, salvo DELETE correcto 
 | POST | /auth/register | nombre, correo, password; 201 usuario sin hash; 400 duplicado o inválido |
 | POST | /auth/login | correo, password; 200 {token,usuario}; 401 credenciales incorrectas |
 | GET | /auth/me | Bearer; 200 usuario público, 401 {error:"No autorizado"} |
+| POST | /auth/session | Cookie HttpOnly vigente, Origin configurado y X-NovaObra-Request: 1; devuelve {token,usuario} sin renovar expiración |
 | POST | /auth/logout | Bearer y {}; revoca sesiones |
 | PUT | /auth/password | Bearer, actual y nueva; revoca sesiones |
 
@@ -47,4 +48,4 @@ Se conservan `/admin/dashboard`, productos, categorías, marcas, inventario, cli
 
 ## Colección y pruebas
 
-`postman/Dia2.postman_collection.json`: 90 solicitudes. `npm run test:postman` la ejecuta con Newman contra una base temporal. `tests/day2.js` comprueba además las cuarenta combinaciones método/ruta con ausencia de token, firma manipulada, expiración real y algoritmo incorrecto.
+`postman/Dia2.postman_collection.json`: 93 solicitudes. `npm run test:postman` la ejecuta con Newman contra una base temporal. `tests/day2.js` comprueba además las cuarenta combinaciones método/ruta con ausencia de token, firma manipulada, expiración real y algoritmo incorrecto.

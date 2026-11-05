@@ -32,6 +32,10 @@
     {
       "key": "expired_token",
       "value": ""
+    },
+    {
+      "key": "public_origin",
+      "value": "http://127.0.0.1:5174"
     }
   ],
   "item": [
@@ -173,6 +177,121 @@
               "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
               "pm.collectionVariables.set('client_token',pm.response.json().token);",
               "pm.test('Contrato JWT',()=>pm.expect(pm.response.json()).to.have.all.keys('token','usuario'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recuperar sesión con cookie HttpOnly",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{public_origin}}"
+          },
+          {
+            "key": "X-NovaObra-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/auth/session",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cookie: rechazar recuperación sin origen",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-NovaObra-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/auth/session",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 403',()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cookie: rechazar recuperación sin cabecera CSRF",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{public_origin}}"
+          }
+        ],
+        "url": "{{base_url}}/auth/session",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 403',()=>pm.response.to.have.status(403));"
             ]
           }
         }

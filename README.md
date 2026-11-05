@@ -57,12 +57,17 @@ No ejecutar la semilla sobre registros existentes. El preparador no sustituye mi
 - `POST /api/auth/register`: `{ nombre, correo, password }`, contraseña de 8 a 128 caracteres. Devuelve 201 con el usuario sin hash; correo duplicado devuelve 400.
 - `POST /api/auth/login`: `{ correo, password }`. Devuelve 200 con `{ token, usuario }`, o 401 si las credenciales son incorrectas.
 - `GET /api/auth/me`: requiere `Authorization: Bearer <token>`. Devuelve los datos públicos del usuario.
-- `POST /api/auth/logout`: revoca las sesiones del usuario y limpia la cookie heredada.
+- `POST /api/auth/session`: recupera el JWT vigente desde la cookie HttpOnly, con origen y cabecera CSRF comprobados; conserva su expiración original.
+- `POST /api/auth/logout`: revoca las sesiones del usuario y elimina la cookie.
 - `PUT /api/auth/password`: verifica `actual`, guarda `nueva` y revoca las sesiones anteriores.
 
-Se mantienen `/auth/registro`, `/auth/yo` y la cookie HttpOnly como compatibilidad; los CRUD y `/auth/me` exigen Bearer. El JWT usa HS256, firma, emisor, audiencia y expiración de ocho horas. El payload contiene identificador y versión de sesión, sin contraseña ni datos privados. El backend vuelve a comprobar que la cuenta esté activa y no se haya revocado.
+Se mantienen `/auth/registro` y `/auth/yo` como compatibilidad; los CRUD y `/auth/me` exigen Bearer. El JWT usa HS256, firma, emisor, audiencia y expiración de ocho horas. El payload contiene identificador y versión de sesión, sin contraseña ni datos privados. El backend vuelve a comprobar que la cuenta esté activa y no se haya revocado.
 
-React guarda el token en memoria y `sessionStorage` para sobrevivir a una recarga. Ambos son accesibles por JavaScript: no son inmunes a XSS. Se conserva la cookie HttpOnly heredada, pero no reemplaza Bearer en las rutas empresariales. El cliente agrega el token automáticamente, invalida la sesión ante 401 o expiración y redirige al login sin reenviar la petición ni crear bucles. Logout también redirige al login.
+La persistencia de sesión usa una cookie `novaobra_session` **HttpOnly**, `SameSite=Lax`, ruta `/` y duración de ocho horas; en producción incorpora **Secure** y requiere HTTPS. El JWT se mantiene únicamente en memoria de React para enviarlo por Bearer. No se guarda en localStorage ni sessionStorage, y se retira la clave de almacenamiento de versiones anteriores.
+
+Al recargar, React llama a `POST /auth/session` con credenciales, origen configurado y `X-NovaObra-Request: 1`. El servidor valida la cookie, firma, expiración, cuenta y revocación antes de devolver el mismo JWT. Esta recuperación no renueva su plazo ni implementa refresh tokens. Las llamadas HTTP usan `credentials: include`; los CRUD siguen exigiendo Bearer para cumplir el PDF. Mantener frontend/API en el mismo sitio, preferiblemente tras el mismo origen, para respetar SameSite.
+
+Una cookie HttpOnly no puede leerse mediante document.cookie. El JWT de memoria sigue siendo accesible a JavaScript; esto reduce la persistencia del secreto pero no hace la aplicación inmune a XSS. El contexto limpia la sesión ante expiración/401 y redirige al login. Logout y cambio de contraseña revocan los tokens y eliminan la cookie con el mismo alcance.
 
 Los orígenes ajenos se rechazan y las mutaciones requieren JSON, salvo DELETE sin cuerpo. Bearer permite usar Postman sin una cabecera personalizada ni un Origin inventado. Para despliegue real, usar HTTPS; no se ha configurado ni publicado un dominio.
 
@@ -118,7 +123,7 @@ npm run test:ui
 
 Las pruebas de navegador requieren Chromium. Puede definirse `CHROMIUM_PATH` con su ejecutable o instalarlo con `npx playwright-core install chromium`. `CHROMIUM_NO_SANDBOX=1` se usa solo en contenedores de pruebas que lo necesiten. Sin archivo de pruebas, Node marca explícitamente las integraciones como omitidas; eso no significa que estén verificadas en tu equipo.
 
-La colección `postman/Dia2.postman_collection.json` contiene 90 solicitudes. Para ejecutarla manualmente, configurar `base_url`, `manager_email` y `manager_password` de un operador existente **en una base desechable**. No exportar sus valores privados. El caso de JWT vencido necesita `expired_token`; si está vacío, se omite expresamente. El ejecutor `test:postman` genera un JWT vencido real y ejecuta los 90 casos con Newman sin guardar credenciales en la colección.
+La colección `postman/Dia2.postman_collection.json` contiene 93 solicitudes. Para ejecutarla manualmente, configurar `base_url`, `manager_email` y `manager_password` de un operador existente **en una base desechable**. No exportar sus valores privados. El caso de JWT vencido necesita `expired_token`; si está vacío, se omite expresamente. El ejecutor `test:postman` genera un JWT vencido real y ejecuta los 93 casos con Newman sin guardar credenciales en la colección.
 
 ## Estructura y evidencias
 

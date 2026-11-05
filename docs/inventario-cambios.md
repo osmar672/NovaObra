@@ -92,7 +92,7 @@ Cada archivo siguiente responde al alcance confirmado. Los cambios mínimos se d
 | Modificado | `iniciar.mjs` | Ejecución, dependencia necesaria o empaquetado | Node, npm, Vite y ZIP | Instalación, build y revisión de ZIP |
 | Modificado | `package-lock.json` | Ejecución, dependencia necesaria o empaquetado | Node, npm, Vite y ZIP | Instalación, build y revisión de ZIP |
 | Modificado | `package.json` | Ejecución, dependencia necesaria o empaquetado | Node, npm, Vite y ZIP | Instalación, build y revisión de ZIP |
-| Creado | `postman/Dia2.postman_collection.json` | Colección del Día 2 | JWT y API real | 90 solicitudes / 91 aserciones Newman |
+| Creado | `postman/Dia2.postman_collection.json` | Colección del Día 2 | JWT y API real | 93 solicitudes / 94 aserciones Newman |
 | Modificado | `scripts/package.py` | Ejecución, dependencia necesaria o empaquetado | Node, npm, Vite y ZIP | Instalación, build y revisión de ZIP |
 | Modificado | `tests/core.test.js` | Regresiones y evidencias ejecutables | Express, MySQL, Chromium o Newman | Comandos npm documentados |
 | Creado | `tests/day2-ui.js` | Regresiones y evidencias ejecutables | Express, MySQL, Chromium o Newman | Comandos npm documentados |
@@ -115,3 +115,6 @@ Cada archivo siguiente responde al alcance confirmado. Los cambios mínimos se d
 | Movido | `backend/services/catalog.js` | Ubicación funcional ajustada al PDF; contenido integrado en src/backend o services/frontend | Importaciones y ejecutores actualizados | Integraciones, build y navegador |
 | Movido | `backend/services/orders.js` | Ubicación funcional ajustada al PDF; contenido integrado en src/backend o services/frontend | Importaciones y ejecutores actualizados | Integraciones, build y navegador |
 | Movido | `frontend/src/lib/api.js` | Ubicación funcional ajustada al PDF; contenido integrado en src/backend o services/frontend | Importaciones y ejecutores actualizados | Integraciones, build y navegador |
+
+| Creado | `tests/cookies.test.js` | Contrato de emisión y borrado de cookies por entorno | Express y cookie de sesión | Cabeceras HTTP reales |
+| Creado | `tests/cookies.js` | Recuperación segura y revocación | MySQL, JWT y CSRF | Integración ejecutable |

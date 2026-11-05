@@ -13,7 +13,7 @@
     "db:setup": "node backend/scripts/setup.js",
     "admin:create": "node backend/scripts/admin.js",
     "test": "node --test tests/*.test.js",
-    "test:integration": "node --test --test-concurrency=1 tests/integration.js tests/day2.js tests/startup.js",
+    "test:integration": "node --test --test-concurrency=1 tests/integration.js tests/day2.js tests/startup.js tests/cookies.js",
     "test:ui": "node --test --test-concurrency=1 tests/ui.js tests/day2-ui.js",
     "serve": "node backend/src/server.js",
     "db:configure": "node backend/scripts/configure.js",

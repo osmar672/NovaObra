@@ -32,24 +32,27 @@ export function readToken(token, secret, now = Date.now()) {
   } catch { return null; }
 }
 export function sessionCookie(res, token, production, clear = false) {
-  res.cookie("novaobra_session", token, {
+  const options = {
     httpOnly: true,
     secure: production,
     sameSite: "lax",
     path: "/",
-    maxAge: clear ? 0 : 8 * 3600000,
-  });
+  };
+  if (clear) res.clearCookie("novaobra_session", options);
+  else res.cookie("novaobra_session", token, { ...options, maxAge: 8 * 3600000 });
+}
+export function cookieToken(req) {
+  const cookie = (req.headers.cookie || "").split(";").map(v => v.trim())
+    .find(v => v.startsWith("novaobra_session="));
+  try { return decodeURIComponent(cookie?.slice(17) || ""); } catch { return ""; }
 }
 export function auth(pool, config) {
-  const requireUser = async (req, res, next) => {
+  const authenticate = async (req, res, next, source = "auto") => {
     try {
-      const cookie = (req.headers.cookie || "")
-        .split(";")
-        .map((v) => v.trim())
-        .find((v) => v.startsWith("novaobra_session="));
       const authorization = req.headers.authorization;
       const bearer = typeof authorization === "string" && /^Bearer [^ ]+$/i.test(authorization) ? authorization.slice(7) : "";
-      const token = readToken(authorization !== undefined ? bearer : (cookie?.slice(17) || ""), config.secret);
+      const value = source === "cookie" ? cookieToken(req) : authorization !== undefined ? bearer : cookieToken(req);
+      const token = readToken(value, config.secret);
       check(token, "No autorizado", 401);
       const [[user]] = await pool.execute(
         "SELECT u.id,u.nombre,u.email,u.rol_id,u.version_sesion,u.creado AS fechaCreacion,r.nombre AS rol FROM usuarios u JOIN roles r ON r.id=u.rol_id WHERE u.id=? AND u.activo=1",
@@ -61,11 +64,20 @@ export function auth(pool, config) {
         401,
       );
       req.user = user;
+      req.authToken = value;
       next();
     } catch (error) {
+      if (source === "cookie" && error.status === 401) sessionCookie(res, "", config.production, true);
       next(error);
     }
   };
+  const requireUser = (req, res, next) => authenticate(req, res, next);
+  const cookieCsrf = (req, res, next) => {
+    if (req.headers.origin !== config.publicUrl || req.headers["x-novaobra-request"] !== "1")
+      return next(new AppError(403, "Origen de la solicitud no permitido."));
+    next();
+  };
+  const requireCookie = (req, res, next) => authenticate(req, res, next, "cookie");
   const roles = (...allowed) => [
     requireUser,
     (req, res, next) =>
@@ -77,7 +89,7 @@ export function auth(pool, config) {
     if (!/^Bearer [^ ]+$/i.test(req.headers.authorization || "")) return next(new AppError(401, "No autorizado"));
     return requireUser(req, res, next);
   };
-  return { requireUser, requireBearer, roles };
+  return { requireUser, requireBearer, requireCookie, cookieCsrf, roles };
 }
 // Single-process bounded limiter. Production with multiple replicas needs a shared store.
 export function loginLimiter() {

@@ -37,7 +37,7 @@ El orden aplicado fue diagnóstico, ajuste de ubicaciones imprescindible, backen
 | Tienda conservada | páginas Home/Catalog/Product/Cart/Account/Admin/Information | VERIFICADO | Búsqueda, favoritos, carrito, pedido, producto administrativo, entrada, confirmación y diseño móvil |
 | Variables y configuración | backend/.env.example; backend/src/config.js; backend/scripts/configure.js | VERIFICADO en Linux | Asistente interactivo creó una cuenta MySQL limitada y JWT_SECRET en backend/.env; admin web y login desde Vite ejecutados |
 | ER y contratos | docs/diagrama_ER.mmd; docs/api.md | VERIFICADO por contraste con esquema y API | Diez tablas reales, PK/FK/UK, cardinalidades y nombres de columnas existentes; correo/fechaCreacion documentados como contrato |
-| Colección Postman | postman/Dia2.postman_collection.json; tests/postman.js | VERIFICADO | Newman ejecutó 90 solicitudes y 91 aserciones, incluido JWT vencido real generado en pruebas |
+| Colección Postman | postman/Dia2.postman_collection.json; tests/postman.js | VERIFICADO | Newman ejecutó 93 solicitudes y 94 aserciones, incluido JWT vencido real generado en pruebas |
 | Compilación e iniciador | package.json; iniciar.mjs; frontend/vite.config.js | VERIFICADO en Linux | Vite compiló; el inicio esperó API/proxy; fallo MySQL detuvo el inicio; SIGINT y Ctrl+C cerraron ambos procesos |
 | Windows/macOS | INICIAR.bat; iniciar.sh | IMPLEMENTADO SIN PROBAR en esos sistemas | Se incluyen iniciadores; no se afirma ejecución nativa fuera de Linux |
 | MySQL de la computadora del usuario | Configuración local externa | BLOQUEADO por falta de acceso | Se utilizó una instancia de pruebas propia, sin acceder a datos locales del usuario |
@@ -51,10 +51,10 @@ Entorno real: Linux x86_64, Node.js 24.22.1, npm 11.9.0, MySQL 8.0.46/InnoDB y C
 | Comando/recorrido | Resultado |
 | --- | --- |
 | npm ci | Instalación reproducible mediante archivos de bloqueo |
-| npm test | 7 pruebas aprobadas |
-| npm run test:integration | 24 pruebas/subpruebas aprobadas |
+| npm test | 8 pruebas aprobadas |
+| npm run test:integration | 25 pruebas/subpruebas aprobadas |
 | npm run test:ui | 6 pruebas/subpruebas aprobadas |
-| npm run test:postman | 90 solicitudes y 91 aserciones aprobadas; 1 prueba Node aprobada |
+| npm run test:postman | 93 solicitudes y 94 aserciones aprobadas; 1 prueba Node aprobada |
 | npm run build | Compilación aprobada |
 | db:configure → db:setup → admin:create → npm start | Recorrido interactivo real aprobado, con archivo local privado y cuenta MySQL limitada |
 | Login JWT → consulta privada desde Vite → Ctrl+C | Aprobado; sin imprimir tokens ni contraseñas |
@@ -122,3 +122,9 @@ mini-proyecto-1/
 Los comandos exactos están en README y package.json. Desde la raíz: `npm ci`, `npm run db:configure`, `npm run admin:create`, `npm start`. Interfaz en `http://127.0.0.1:5174`. Con configuración existente válida, solo `npm start`.
 
 Consultar `docs/pendientes.md` para los límites de plataforma, acceso a MySQL local y despliegue. No queda implementada una investigación académica, un nuevo sistema de roles, refresh tokens ni un despliegue HTTPS; no forman parte del alcance autorizado.
+
+## Integración de cookies de sesión
+
+La sesión persiste mediante novaobra_session HttpOnly, SameSite=Lax y Secure en producción. React mantiene el JWT únicamente en memoria y lo recupera con POST /api/auth/session, protegido por origen y cabecera personalizada. Se conserva la obligación Bearer de todos los CRUD. La recuperación conserva el mismo JWT y su expiración original. Logout, cambio de contraseña y rechazo de una cookie inválida eliminan la cookie con alcance consistente.
+
+Pruebas: tests/cookies.test.js comprueba cabeceras reales de emisión/borrado y Secure por entorno; tests/cookies.js verifica recuperación, rechazo de CSRF, token vencido, revocación y que una cookie sola no abra los CRUD; tests/day2-ui.js comprueba HttpOnly, ausencia del JWT en sessionStorage/document.cookie, recarga, expiración y eliminación al cerrar sesión.
