@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext.jsx";
 import { useData } from "../hooks/useData.js";
-import { api, money } from "../lib/api.js";
+import { api, money } from "../services/api.js";
 import { Feedback, Meta, PageHeading, Empty } from "../components/UI.jsx";
 import { OrderList } from "./Account.jsx";
 function useMutation(reload) {

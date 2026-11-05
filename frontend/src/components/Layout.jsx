@@ -7,14 +7,14 @@ export default function Layout() {
     [open, setOpen] = useState(false),
     [search, setSearch] = useState(""),
     navigate = useNavigate();
-  const { data: categories } = useData("/categorias");
+  const { data: categories } = useData(user ? "/categorias" : null);
   const [suggestionTerm, setSuggestionTerm] = useState("");
   React.useEffect(() => {
     const timer = setTimeout(() => setSuggestionTerm(search.trim()), 300);
     return () => clearTimeout(timer);
   }, [search]);
   const { data: suggestions } = useData(
-    suggestionTerm.length >= 2
+    user && suggestionTerm.length >= 2
       ? `/productos?q=${encodeURIComponent(suggestionTerm)}`
       : null,
   );
@@ -156,7 +156,7 @@ export default function Layout() {
             <strong>NovaObra</strong>
             <Link to="/nosotros">Sobre la ferretería</Link>
             {user && user.rol !== "cliente" && (
-              <Link to="/admin">Administración</Link>
+              <Link to="/gestion/categorias">Administración</Link>
             )}
             <p>
               Retiro en tienda.

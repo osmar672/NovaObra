@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { money, productPath } from "../lib/api.js";
+import { money, productPath } from "../services/api.js";
 import { useShop } from "../context/ShopContext.jsx";
 export function Meta({
   title,

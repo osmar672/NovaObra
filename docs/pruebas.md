@@ -1,3 +1,5 @@
+> Evidencia histórica anterior al Día 2. Los contratos y resultados actuales están en [entrega del Día 2](entrega-dia2.md).
+
 # Verificación de la tienda
 
 Verificación de la estructura única ejecutada el 4 de noviembre de 2026 en Linux, con MySQL **8.0.46**, Node.js y Chromium reales. Las pruebas usan bases temporales `novaobra_shop_test_*`, creadas y eliminadas por cada ejecución; no utilizan la base del usuario ni bases anteriores. No se probó físicamente el equipo Windows del usuario.

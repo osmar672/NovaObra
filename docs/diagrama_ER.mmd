@@ -1,0 +1,98 @@
+erDiagram
+  roles {
+    tinyint id PK
+    varchar nombre UK
+  }
+  usuarios {
+    int id PK
+    tinyint rol_id FK
+    varchar nombre
+    varchar email UK
+    varchar password_hash
+    boolean activo
+    int version_sesion
+    timestamp creado
+  }
+  roles ||--o{ usuarios : "rol_id"
+  clientes {
+    int id PK
+    int usuario_id FK,UK
+    varchar telefono
+    varchar direccion
+  }
+  usuarios ||--o| clientes : "usuario_id"
+  categorias {
+    int id PK
+    varchar nombre UK
+    varchar descripcion
+    boolean activo
+  }
+  marcas {
+    int id PK
+    varchar nombre UK
+    varchar descripcion
+    boolean activo
+  }
+  productos {
+    int id PK
+    int categoria_id FK
+    int marca_id FK
+    varchar sku UK
+    varchar nombre
+    text descripcion
+    text especificaciones
+    varchar imagen
+    decimal precio
+    decimal precio_oferta
+    datetime oferta_inicio
+    datetime oferta_fin
+    boolean destacado
+    boolean activo
+    timestamp creado
+  }
+  categorias ||--o{ productos : "categoria_id"
+  marcas ||--o{ productos : "marca_id"
+  inventario {
+    int producto_id PK,FK
+    int existencia
+    int minimo
+  }
+  productos ||--o| inventario : "producto_id"
+  pedidos {
+    int id PK
+    int cliente_id FK
+    varchar clave
+    enum tipo
+    enum estado
+    enum entrega
+    varchar direccion
+    varchar telefono
+    varchar nota
+    decimal costo_entrega
+    timestamp creado
+    timestamp actualizado
+  }
+  clientes ||--o{ pedidos : "cliente_id"
+  detalle_pedidos {
+    int id PK
+    int pedido_id FK
+    int producto_id FK
+    int cantidad
+    decimal precio_unitario
+  }
+  pedidos ||--o{ detalle_pedidos : "pedido_id"
+  productos ||--o{ detalle_pedidos : "producto_id"
+  movimientos_inventario {
+    bigint id PK
+    int producto_id FK
+    int usuario_id FK
+    int pedido_id FK
+    int cantidad
+    varchar motivo
+    timestamp creado
+  }
+  productos ||--o{ movimientos_inventario : "producto_id"
+  usuarios ||--o{ movimientos_inventario : "usuario_id"
+  pedidos ||--o{ movimientos_inventario : "pedido_id"
+%% Unicidad compuesta real: pedidos(cliente_id, clave); detalle_pedidos(pedido_id, producto_id).
+%% Usuario del contrato: correo=email, fechaCreacion=creado; password se almacena como password_hash.

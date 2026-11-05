@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { api } from "../lib/api.js";
+import { api } from "../services/api.js";
 export function useData(path, { poll = false } = {}) {
   const [state, setState] = useState({ data: null, error: "", loading: true }),
     [version, setVersion] = useState(0);

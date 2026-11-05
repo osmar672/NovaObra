@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { fixture, available } from "./helpers.js";
-import { setup, verifySchema } from "../backend/schema.js";
+import { setup, verifySchema } from "../backend/src/schema.js";
 test("Contraseñas con espacios: registro, login y cambio conservan el valor exacto", { skip: !available }, async () => {
   const f = await fixture();
   try {
@@ -24,7 +24,8 @@ test(
   { skip: !available },
   async (t) => {
     const f = await fixture();
-    const { pool, request } = f;
+    const { pool } = f;
+    const request=(path,options={})=>f.request(path,{...(/^\/api\/(productos|categorias|marcas)(?:[/?]|$)/.test(path)&&client?{cookie:client}:{}),...options});
     let admin, employee, client, other, product, order;
     const post = (path, body, cookie, method = "POST") =>
       request(path, { method, body, cookie });
@@ -74,7 +75,7 @@ test(
             rol_id: 1,
           });
           assert.equal(c.status, 201);
-          assert.equal(c.body.rol, "cliente");
+          assert.equal(c.body.usuario.rol, "cliente");
           client = c.cookie;
           const o = await post("/api/auth/registro", {
             nombre: "Otro cliente",
@@ -108,7 +109,7 @@ test(
         },
       );
       await t.test(
-        "CSRF y CORS: rechazo de origen ajeno y cabecera ausente",
+        "CSRF y CORS: origen ajeno rechazado; Bearer reemplaza cabecera personalizada",
         async () => {
           assert.equal(
             (
@@ -129,7 +130,7 @@ test(
                 header: false,
               })
             ).status,
-            403,
+            400,
           );
           const ok = await fetch(f.base + "/api/auth/login", {
             method: "OPTIONS",
@@ -558,7 +559,7 @@ test(
         async () => {
           await pool.query("CREATE TABLE ajena_startup (id INT PRIMARY KEY)");
           const result = await new Promise((resolve, reject) => {
-            const child = spawn(process.execPath, ["backend/server.js"], {
+            const child = spawn(process.execPath, ["backend/src/server.js"], {
               cwd: new URL("../", import.meta.url),
               env: {
                 ...process.env,

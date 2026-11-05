@@ -1,8 +1,8 @@
 import mysql from "mysql2/promise";
-import { configuration } from "../config.js";
+import { configuration } from "../src/config.js";
 import { ask } from "./prompt.js";
-import { email, text, password } from "../lib/validation.js";
-import { hashPassword } from "../lib/auth.js";
+import { email, text, password } from "../src/middlewares/validaciones.js";
+import { hashPassword } from "../src/middlewares/authMiddleware.js";
 let connection;
 try {
   const config = configuration();

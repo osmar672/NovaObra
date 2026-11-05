@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useShop } from "../context/ShopContext.jsx";
 import { useData } from "../hooks/useData.js";
-import { api, money } from "../lib/api.js";
+import { api, money } from "../services/api.js";
 import { Feedback, Meta, PageHeading, Empty } from "../components/UI.jsx";
 export function OrderList({ orders }) {
   return (
@@ -54,9 +54,9 @@ export default function Account() {
         method: "POST",
         body: data,
       });
-      setUser(logged);
+      setUser(logged.usuario);
       if (params.get("volver") === "carrito") navigate("/carrito");
-      else if (logged.rol !== "cliente") navigate("/admin");
+      else if (logged.usuario.rol !== "cliente") navigate("/admin");
     } catch (e) {
       setError(e.message);
     } finally {
@@ -99,7 +99,7 @@ export default function Account() {
           <>
             <div className="button-row">
               {user.rol !== "cliente" && (
-                <Link className="button" to="/admin">
+                <Link className="button" to="/gestion/categorias">
                   Administración
                 </Link>
               )}
@@ -149,7 +149,7 @@ export default function Account() {
                   <input
                     type="password"
                     name="nueva"
-                    minLength={12}
+                    minLength={8}
                     maxLength={128}
                     required
                     autoComplete="new-password"
@@ -188,7 +188,7 @@ export default function Account() {
                 name="password"
                 type="password"
                 required
-                minLength={register ? 12 : 1}
+                minLength={register ? 8 : 1}
                 maxLength={128}
                 autoComplete={register ? "new-password" : "current-password"}
               />

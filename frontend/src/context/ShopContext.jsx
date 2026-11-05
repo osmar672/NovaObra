@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { api } from "../lib/api.js";
+import { useAuth } from "./AuthContext.jsx";
 const Context = createContext(null);
 function read(key, fallback, validate) {
   try {
@@ -10,9 +10,7 @@ function read(key, fallback, validate) {
   }
 }
 export function ShopProvider({ children }) {
-  const [user, setUser] = useState(null),
-    [authReady, setAuthReady] = useState(false),
-    [authError, setAuthError] = useState("");
+  const {user,setUser,authReady,authError,logout}=useAuth();
   const [cart, setCart] = useState(() =>
     read(
       "novaobra-cart",
@@ -38,19 +36,6 @@ export function ShopProvider({ children }) {
     ),
   );
   const [notice, setNotice] = useState("");
-  useEffect(() => {
-    const c = new AbortController();
-    api("/auth/yo", { signal: c.signal })
-      .then(setUser)
-      .catch((e) => {
-        if (e.name !== "AbortError" && e.status !== 401)
-          setAuthError(e.message);
-      })
-      .finally(() => {
-        if (!c.signal.aborted) setAuthReady(true);
-      });
-    return () => c.abort();
-  }, []);
   useEffect(() => {
     try {
       localStorage.setItem("novaobra-cart", JSON.stringify(cart));
@@ -101,10 +86,6 @@ export function ShopProvider({ children }) {
           ? [...old, id]
           : old,
     );
-  const logout = async () => {
-    await api("/auth/logout", { method: "POST", body: {} });
-    setUser(null);
-  };
   return (
     <Context.Provider
       value={{

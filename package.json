@@ -13,21 +13,24 @@
     "db:setup": "node backend/scripts/setup.js",
     "admin:create": "node backend/scripts/admin.js",
     "test": "node --test tests/*.test.js",
-    "test:integration": "node --test --test-concurrency=1 tests/integration.js tests/startup.js",
-    "test:ui": "node --test tests/ui.js",
-    "serve": "node backend/server.js",
-    "db:configure": "node backend/scripts/configure.js"
+    "test:integration": "node --test --test-concurrency=1 tests/integration.js tests/day2.js tests/startup.js",
+    "test:ui": "node --test --test-concurrency=1 tests/ui.js tests/day2-ui.js",
+    "serve": "node backend/src/server.js",
+    "db:configure": "node backend/scripts/configure.js",
+    "test:postman": "node --test tests/postman.js"
   },
   "dependencies": {
-    "express": "^5.1.0",
-    "mysql2": "^3.15.0",
     "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.15.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.0"
   },
   "devDependencies": {
-    "vite": "^7.2.0",
-    "playwright-core": "^1.64.1"
+    "newman": "^6.2.3",
+    "playwright-core": "^1.64.1",
+    "vite": "^7.2.0"
   }
 }

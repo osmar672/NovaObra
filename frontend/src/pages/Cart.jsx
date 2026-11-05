@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext.jsx";
 import { useData } from "../hooks/useData.js";
-import { api, money, productPath } from "../lib/api.js";
+import { api, money, productPath } from "../services/api.js";
 import { Feedback, Meta, PageHeading, Empty } from "../components/UI.jsx";
 export default function Cart() {
   const { cart, setCart, user } = useShop(),

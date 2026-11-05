@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
-import { configuration } from "../config.js";
-import { setup } from "../schema.js";
+import { configuration } from "../src/config.js";
+import { setup } from "../src/schema.js";
 let connection;
 try {
   const config = configuration();

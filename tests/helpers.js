@@ -1,10 +1,10 @@
 import mysql from "mysql2/promise";
 import { readFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
-import { setup } from "../backend/schema.js";
-import { createApp } from "../backend/app.js";
-import { hashPassword } from "../backend/lib/auth.js";
-import { createPool } from "../backend/db.js";
+import { setup } from "../backend/src/schema.js";
+import { createApp } from "../backend/src/app.js";
+import { hashPassword } from "../backend/src/middlewares/authMiddleware.js";
+import { createPool } from "../backend/src/db.js";
 export const available = !!process.env.NOVAOBRA_TEST_ADMIN_FILE;
 export async function fixture({ seed = true } = {}) {
   const credentials = JSON.parse(
@@ -60,12 +60,14 @@ export async function fixture({ seed = true } = {}) {
         method = "GET",
         body,
         cookie,
+        token,
         origin = config.publicUrl,
         header = true,
       } = {},
     ) {
       const headers = {};
       if (cookie) headers.Cookie = cookie;
+      if(token||cookie)headers.Authorization = `Bearer ${token || cookie.slice(cookie.indexOf("=")+1)}`;
       if (body !== undefined) {
         headers["Content-Type"] = "application/json";
         if (origin) headers.Origin = origin;

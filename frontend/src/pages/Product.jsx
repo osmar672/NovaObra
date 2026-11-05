@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { useData } from "../hooks/useData.js";
 import { useShop } from "../context/ShopContext.jsx";
-import { money, productPath } from "../lib/api.js";
+import { money, productPath } from "../services/api.js";
 import { Meta, ProductImage, Feedback } from "../components/UI.jsx";
 export default function Product() {
   const { id } = useParams(),

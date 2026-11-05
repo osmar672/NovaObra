@@ -5,9 +5,9 @@ import {
   verifyPassword,
   issueToken,
   readToken,
-} from "../backend/lib/auth.js";
-import { cents, imageUrl, integer } from "../backend/lib/validation.js";
-import { orderLines, allowedNext } from "../backend/services/orders.js";
+} from "../backend/src/middlewares/authMiddleware.js";
+import { cents, imageUrl, integer } from "../backend/src/middlewares/validaciones.js";
+import { orderLines, allowedNext } from "../backend/src/services/orders.js";
 test("Contraseñas: sal aleatoria y rechazo de contraseñas incorrectas", async () => {
   const value = "Una clave larga de prueba";
   const a = await hashPassword(value),

@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
-import { configuration } from "./backend/config.js";
+import { configuration } from "./backend/src/config.js";
 const cwd = fileURLToPath(new URL(".", import.meta.url));
 const children = new Set();
 let closing = false, keyboard;
@@ -63,7 +63,7 @@ try {
   if (config.port === 0) throw new Error("El iniciador necesita un PORT fijo entre 1 y 65535.");
   await freePort(config.host, config.port);
   await freePort("127.0.0.1", 5174);
-  launch(["backend/server.js"]);
+  launch(["backend/src/server.js"]);
   await ready(`http://${config.host}:${config.port}/api/health`);
   launch(["node_modules/vite/bin/vite.js", "--config", "frontend/vite.config.js", "--clearScreen", "false"]);
   await ready("http://127.0.0.1:5174/api/health");

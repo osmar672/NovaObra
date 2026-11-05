@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useData } from "../hooks/useData.js";
 import { useShop } from "../context/ShopContext.jsx";
-import { api } from "../lib/api.js";
+import { api } from "../services/api.js";
 import {
   Feedback,
   Meta,
