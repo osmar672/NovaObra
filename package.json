@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "dev": "vite --config frontend/vite.config.js",
@@ -17,7 +17,9 @@
     "test:ui": "node --test --test-concurrency=1 tests/ui.js tests/day2-ui.js",
     "serve": "node backend/src/server.js",
     "db:configure": "node backend/scripts/configure.js",
-    "test:postman": "node --test tests/postman.js"
+    "test:postman": "node --test tests/postman.js",
+    "postinstall": "node tests/apply-security-patches.cjs",
+    "audit:deps": "npm audit && npm audit --omit=dev"
   },
   "dependencies": {
     "dotenv": "^17.2.0",
@@ -29,8 +31,21 @@
     "react-router-dom": "^7.9.0"
   },
   "devDependencies": {
-    "newman": "^6.2.3",
+    "newman": "6.2.3",
+    "patch-package": "8.0.1",
     "playwright-core": "^1.64.1",
     "vite": "^7.2.0"
+  },
+  "overrides": {
+    "@faker-js/faker": "10.6.0",
+    "csv-parse": "7.0.3",
+    "flatted": "3.4.4",
+    "handlebars": "4.7.10",
+    "jose": "4.15.9",
+    "lodash": "4.18.1",
+    "node-forge": "1.4.3",
+    "qs": "6.17.1",
+    "underscore": "1.13.8",
+    "uuid": "11.1.1"
   }
 }

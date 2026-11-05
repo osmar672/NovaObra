@@ -51,7 +51,7 @@ Entorno real: Linux x86_64, Node.js 24.22.1, npm 11.9.0, MySQL 8.0.46/InnoDB y C
 | Comando/recorrido | Resultado |
 | --- | --- |
 | npm ci | Instalación reproducible mediante archivos de bloqueo |
-| npm test | 8 pruebas aprobadas |
+| npm test | 10 pruebas aprobadas |
 | npm run test:integration | 25 pruebas/subpruebas aprobadas |
 | npm run test:ui | 6 pruebas/subpruebas aprobadas |
 | npm run test:postman | 93 solicitudes y 94 aserciones aprobadas; 1 prueba Node aprobada |
@@ -128,3 +128,7 @@ Consultar `docs/pendientes.md` para los límites de plataforma, acceso a MySQL l
 La sesión persiste mediante novaobra_session HttpOnly, SameSite=Lax y Secure en producción. React mantiene el JWT únicamente en memoria y lo recupera con POST /api/auth/session, protegido por origen y cabecera personalizada. Se conserva la obligación Bearer de todos los CRUD. La recuperación conserva el mismo JWT y su expiración original. Logout, cambio de contraseña y rechazo de una cookie inválida eliminan la cookie con alcance consistente.
 
 Pruebas: tests/cookies.test.js comprueba cabeceras reales de emisión/borrado y Secure por entorno; tests/cookies.js verifica recuperación, rechazo de CSRF, token vencido, revocación y que una cookie sola no abra los CRUD; tests/day2-ui.js comprueba HttpOnly, ausencia del JWT en sessionStorage/document.cookie, recarga, expiración y eliminación al cerrar sesión.
+
+## Actualización de seguridad de dependencias
+
+Se reprodujeron las 19 alertas (6 moderadas, 12 altas y 1 crítica) del árbol de Newman y se corrigieron las diez dependencias causantes sin retirar el ejecutor ni la colección. Las auditorías completa y de producción devuelven cero. Se añadió una verificación real de los 118 generadores y de iteraciones CSV con caracteres especiales. El detalle, versiones, parches y comandos están en [vulnerabilidades](vulnerabilidades.md).

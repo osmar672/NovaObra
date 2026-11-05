@@ -4,7 +4,7 @@ Tienda existente de ferretería con Node.js/Express, React/Vite y MySQL 8. Se co
 
 ## Instalación y ejecución
 
-Requisitos: Node.js 24 LTS (mínimo 22.12), npm, MySQL 8.0.16 o posterior iniciado e Internet para instalar dependencias. MariaDB no es compatible.
+Requisitos: Node.js 24 LTS (mínimo 22.13), npm, MySQL 8.0.16 o posterior iniciado e Internet para instalar dependencias. MariaDB no es compatible.
 
 Desde la carpeta raíz `mini-proyecto-1`:
 
@@ -93,6 +93,17 @@ Vistas privadas de gestión: `/gestion/categorias`, `/gestion/marcas`, `/gestion
 - Productos con existencias/historial y entidades referenciadas no se eliminan. Las referencias inexistentes se rechazan con 404 y los valores inválidos con 400.
 
 Estos conflictos son reglas de negocio verificadas, no endpoints simulados.
+
+## Dependencias y auditoría de seguridad
+
+El árbol completo de dependencias, incluidas las de desarrollo, se corrigió de 19 alertas a cero. Ver [análisis y correcciones](docs/vulnerabilidades.md). Newman se conserva, con versiones transitivas corregidas y dos parches de compatibilidad aplicados automáticamente por postinstall. No desactives los scripts al instalar para usar el ejecutor.
+
+```sh
+npm ci
+npm run audit:deps
+```
+
+Node.js 24 LTS es la versión recomendada; el mínimo 22.13 permite utilizar el Faker corregido. Una instalación de producción con `npm ci --omit=dev` también se verificó y no requiere patch-package. Los parches y pruebas residen en archivos técnicos de la entrega, sin modificar la estructura de modelos, controladores, rutas ni middlewares.
 
 ## Pruebas reproducibles
 

@@ -118,3 +118,9 @@ Cada archivo siguiente responde al alcance confirmado. Los cambios mínimos se d
 
 | Creado | `tests/cookies.test.js` | Contrato de emisión y borrado de cookies por entorno | Express y cookie de sesión | Cabeceras HTTP reales |
 | Creado | `tests/cookies.js` | Recuperación segura y revocación | MySQL, JWT y CSRF | Integración ejecutable |
+
+| Creado | `patches/newman+6.2.3.patch` | Adaptación al lector CSV corregido | Newman y csv-parse 7 | Iteraciones CSV reales |
+| Creado | `patches/postman-collection+4.4.0.patch` | Adaptación al Faker corregido | SDK Postman y Faker 10 | 118 generadores y colección |
+| Creado | `tests/apply-security-patches.cjs` | Instalación reproducible de parches | npm postinstall y patch-package | npm ci completo y --omit=dev |
+| Creado | `tests/newman-compat.test.js` | Regresiones de dependencias corregidas | SDK, CSV y Newman | Dos pruebas ejecutables |
+| Creado | `docs/vulnerabilidades.md` | Análisis de las 19 entradas y solución | Auditorías y archivo de bloqueo | npm run audit:deps |
