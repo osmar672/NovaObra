@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
-import { configuration } from "../config.js";
-import { setup } from "../schema.js";
+import { configuration } from "../src/config.js";
+import { setup } from "../src/schema.js";
 let connection;
 try {
   const config = configuration();
@@ -12,7 +12,7 @@ try {
     seed: process.argv.includes("--demo"),
   });
   console.log(
-    "Tienda preparada: 10 tablas. Los ejemplos solo se cargan al usar --demo.",
+    "Tienda preparada: 11 tablas. Los ejemplos solo se cargan al usar --demo.",
   );
 } catch (error) {
   console.error("No se pudo preparar la tienda:", error.code || error.message);

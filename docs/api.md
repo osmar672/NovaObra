@@ -1,50 +1,51 @@
-# API NovaObra Tienda
+# API del Día 2
 
-Origen local del backend: `http://127.0.0.1:3003/api`; el navegador utiliza el proxy del frontend en 5174. Respuestas JSON; fallos `{ "error": "mensaje" }`. Las escrituras requieren `Content-Type: application/json`, `Origin` igual a `PUBLIC_URL` y `X-NovaObra-Request: 1`. La cookie `novaobra_session` se obtiene al registrar/iniciar sesión, es HttpOnly y no debe copiarse a localStorage.
+Base local: `http://127.0.0.1:3003/api`. Respuestas JSON, salvo DELETE correcto que devuelve 204. Mutaciones POST/PUT/PATCH usan `Content-Type: application/json`; DELETE puede no tener cuerpo.
 
-| Método y ruta relativa a `/api` | Acceso / contenido |
-| --- | --- |
-| GET `/health`, `/config` | Estado del esquema / datos públicos del negocio |
-| GET `/categorias`, `/marcas` | Catálogos activos |
-| GET `/productos` | Filtros `q`, `categoria`, `marca`, `min`, `max`, `disponible=1`, `ofertas=1`, `destacado=1`, `orden`, `pagina`; 12 por página |
-| GET `/productos/:id` | Producto visible, existencia y precio vigente |
-| POST `/auth/registro` | `nombre`, `email`, `password`; crea siempre cliente |
-| POST `/auth/login` | `email`, `password`; sesión de ocho horas |
-| GET `/auth/yo` | Usuario de la sesión |
-| POST `/auth/logout` | Invalida las sesiones de ese usuario |
-| PUT `/auth/password` | `actual`, `nueva`; invalida sesiones |
-| GET `/pedidos` | Últimos 200 pedidos del propio cliente, con líneas |
-| POST `/pedidos` | Cliente; contrato de creación debajo |
-| GET `/admin/dashboard` | Administrador/empleado; indicadores reales |
-| GET, POST `/admin/productos` | Listar / crear productos |
-| PUT `/admin/productos/:id` | Reemplazar campos editables, no stock |
-| GET, POST `/admin/categorias`, `/admin/marcas` | Listar / crear taxonomías |
-| PUT `/admin/categorias/:id`, `/admin/marcas/:id` | Editar nombre, descripción, estado |
-| GET `/admin/inventario` | Últimos 200 movimientos |
-| POST `/admin/inventario` | `producto_id`, `cantidad` con signo y `motivo`; sin modificar historial |
-| GET `/admin/pedidos`, `/admin/clientes` | Últimos 200 registros |
-| PATCH `/admin/pedidos/:id` | `estado`; transiciones controladas |
-| GET `/admin/usuarios` | Solo administrador; nunca incluye hashes |
-| PATCH `/admin/usuarios/:id` | Solo administrador: `rol_id`, `activo`; no permite cambiar acceso propio |
+## Autenticación
 
-Creación de pedido o cotización:
+| Método | Ruta | Cuerpo o resultado |
+| --- | --- | --- |
+| POST | /auth/register | nombre, correo, password; 201 usuario sin hash; 400 duplicado o inválido |
+| POST | /auth/login | correo, password; 200 {token,usuario}; 401 credenciales incorrectas |
+| GET | /auth/me | Bearer; 200 usuario público, 401 {error:"No autorizado"} |
+| POST | /auth/refresh (alias /auth/session) | Cookie refresh HttpOnly, Origin configurado y X-NovaObra-Request: 1; rota refresh y devuelve {token,usuario}; 401 al vencer/reutilizar |
+| POST | /auth/logout | Bearer y {}; revoca sesiones |
+| PUT | /auth/password | Bearer, actual y nueva; revoca sesiones |
 
-```json
-{
-  "clave": "identificador-unico-de-solicitud",
-  "tipo": "pedido",
-  "entrega": "retiro",
-  "telefono": "telefono-del-cliente",
-  "direccion": "",
-  "nota": "",
-  "lineas": [{ "producto_id": 1, "cantidad": 2 }]
-}
-```
+`usuario` expone id, nombre, correo, email (compatibilidad), fechaCreacion y rol existente. Nunca expone password_hash. `JWT_SECRET` permanece en backend/.env. Se mantienen los alias anteriores `/auth/registro` y `/auth/yo`.
 
-`clave`: 16–64 letras, números, `_` o `-`, única por cliente. Reenviar la misma clave devuelve el pedido original (200) sin repetir efectos; la creación devuelve 201. No se acepta precio ni costo de entrega como fuente del importe: se consultan en servidor. `tipo=cotizacion` guarda el precio solicitado sin reservar existencias. `entrega=domicilio` exige dirección y configuración `DELIVERY_FEE`. No se procesan pagos.
+## Ocho CRUD
 
-Estados de pedido: `pendiente → confirmado → preparando → listo → entregado` para retiro, o `preparando → enviado → entregado` para domicilio. Puede cancelarse antes de enviado/entregado. Las cotizaciones solo pasan de pendiente a confirmado o cancelado. Una transición repetida al estado actual es idempotente.
+Para cada entidad: POST `/entidad` (201), GET `/entidad` (200), GET `/entidad/:id` (200/404), PUT `/entidad/:id` (200/404), DELETE `/entidad/:id` (204/404/409). Sin Bearer válido, las cinco operaciones devuelven exactamente 401 con `{ "error": "No autorizado" }`.
 
-Los productos aceptan `categoria_id`, `marca_id`, `sku`, `nombre`, `descripcion`, `especificaciones`, `imagen` HTTPS, `precio`, `precio_oferta` opcional, `oferta_inicio`, `oferta_fin` UTC ISO, `destacado`, `activo`, `minimo`. El precio promocional exige rango de fechas y ser menor al normal. El alta crea el inventario en cero. Los campos booleanos deben ser JSON boolean y las cantidades enteros.
+| Entidad | Clave | Campos aceptados en alta |
+| --- | --- | --- |
+| categorias | id | nombre, descripcion, activo |
+| marcas | id | nombre, descripcion, activo |
+| productos | id | categoria_id, marca_id, sku, nombre, descripcion, especificaciones, imagen HTTPS opcional, precio, precio_oferta opcional, oferta_inicio/fin UTC opcionales, destacado, activo, minimo |
+| clientes | id | usuario_id existente, telefono, direccion |
+| inventario | producto_id | producto_id existente, existencia, minimo |
+| pedidos | id | cliente_id (operador), clave única, tipo pedido/cotizacion, entrega retiro/domicilio, direccion, telefono, nota, lineas [{producto_id,cantidad}] |
+| detalle_pedidos | id | pedido_id, producto_id, cantidad |
+| movimientos_inventario | id | producto_id, cantidad con signo y distinta de cero, motivo |
 
-Fuera de `/api`: `GET /sitemap.xml`, `GET /robots.txt` y el frontend compilado. Los errores de base y contraseñas no se devuelven al navegador. El acceso o registro supera el límite tras 30 solicitudes por IP en 15 minutos; devuelve 429 y `Retry-After`.
+GET productos conserva el formato de catálogo `{items,total,pagina,paginas}` y sus filtros existentes. Los demás listados devuelven arreglos. Los identificadores relacionados se validan con el esquema real antes de escribir. Los precios y el responsable de movimientos proceden del servidor. El producto se crea junto a inventario cero; para probar POST inventario puede eliminarse primero ese inventario vacío y sin historial.
+
+PUT permite cambios parciales en catálogos básicos, clientes, inventario, detalles y movimientos. Producto conserva su contrato completo de edición anterior. En pedidos solo se actualizan entrega, dirección, teléfono y nota, mientras estén pendientes. Las líneas tienen su propio CRUD. No se reasigna una línea a otro pedido.
+
+La autenticación es necesaria en todos los CRUD; se conservan los permisos de gestión previos: administrador/empleado escriben, clientes solo consultan el catálogo y gestionan sus solicitudes propias. GET de un pedido ajeno responde 404. Un cliente no obtiene permisos administrativos por registrarse.
+
+## Dependencias y stock
+
+FK inexistente: 404. Validación: 400. Duplicados y dependencias: 409. Producto o inventario con stock/historial, pedidos con dependencias y movimientos ligados a pedidos no se borran. Los detalles solo se alteran en pedidos pendientes. Crear/editar/eliminar movimientos manuales y detalles compensa stock dentro de la misma transacción. La cancelación de un pedido es idempotente y devuelve únicamente su reserva vigente.
+
+## Rutas conservadas
+
+Se conservan `/admin/dashboard`, productos, categorías, marcas, inventario, clientes, pedidos y usuarios del panel previo, con sus permisos. No se añadió otro CRUD de usuarios. PATCH `/admin/pedidos/:id` recibe `{estado}` y aplica las transiciones comerciales anteriores.
+
+`GET /referencias` devuelve opciones reales para selectores y `GET /entidades` sus campos; ambos exigen JWT y rol de gestión. `/health` y `/config` son técnicos/informativos públicos, sin operaciones de datos empresariales. `/robots.txt` y `/sitemap.xml` siguen siendo recursos SEO.
+
+## Colección y pruebas
+
+`postman/Dia2.postman_collection.json`: 93 solicitudes. `npm run test:postman` la ejecuta con Newman contra una base temporal. `tests/day2.js` comprueba además las cuarenta combinaciones método/ruta con ausencia de token, firma manipulada, expiración real y algoritmo incorrecto.

@@ -70,6 +70,16 @@ test(
       page.setDefaultTimeout(8000);
       page.on("pageerror", (e) => errors.push(e.message));
       await step("Inicio, navegación, búsquedas y favoritos", async () => {
+        await page.goto(f.config.publicUrl + '/registro');
+        await page.getByLabel('Nombre', {exact:true}).fill('Cliente navegador');
+        await page.getByLabel('Correo', {exact:true}).fill('ui@example.test');
+        await page.getByLabel('Contraseña (mínimo 8 caracteres)').fill(f.password);
+        await page.getByRole('button',{name:'Registrarme',exact:true}).click();
+        await page.getByRole('heading',{name:'Iniciar sesión',exact:true}).waitFor();
+        await page.getByLabel('Correo',{exact:true}).fill('ui@example.test');
+        await page.getByLabel('Contraseña',{exact:true}).fill(f.password);
+        await page.getByRole('button',{name:'Entrar',exact:true}).click();
+        await page.getByRole('heading',{name:'Nuestro catálogo'}).waitFor();
         await page.goto(f.config.publicUrl);
         await page
           .getByRole("heading", {
@@ -137,20 +147,6 @@ test(
         await page.reload();
         await page.getByLabel("Cantidad de Taladro percutor 650 W").fill("2");
         await page.getByLabel("Teléfono de contacto").fill("8888-8888");
-        await page
-          .getByRole("button", { name: "Iniciar sesión para continuar" })
-          .click();
-        await page
-          .getByRole("button", { name: "Crear una cuenta nueva" })
-          .click();
-        await page.getByLabel("Nombre completo").fill("Cliente navegador");
-        await page.getByLabel("Correo electrónico").fill("ui@example.test");
-        await page.getByLabel("Contraseña", { exact: true }).fill(f.password);
-        await page
-          .getByRole("button", { name: "Crear cuenta", exact: true })
-          .click();
-        await page.getByRole("heading", { name: "Mi carrito" }).waitFor();
-        await page.getByLabel("Teléfono de contacto").fill("8888-8888");
         await page.getByRole("button", { name: "Enviar solicitud" }).click();
         await page
           .getByRole("heading", { name: /Solicitud #\d+ registrada/ })
@@ -163,7 +159,7 @@ test(
         assert.equal(stock.existencia, 8);
         await page.goto(f.config.publicUrl + "/admin");
         await page
-          .getByRole("heading", { name: "Acceso restringido" })
+          .getByText("No tienes permiso para gestionar estos registros.", {exact:true})
           .waitFor();
       });
       await step(
@@ -172,12 +168,14 @@ test(
           await page.goto(f.config.publicUrl + "/cuenta");
           await page.getByRole("button", { name: "Cerrar sesión" }).click();
           await page
-            .getByLabel("Correo electrónico")
+            .getByLabel("Correo",{exact:true})
             .fill("admin@example.test");
           await page.getByLabel("Contraseña", { exact: true }).fill(f.password);
           await page
-            .getByRole("button", { name: "Iniciar sesión", exact: true })
+            .getByRole("button", { name: "Entrar", exact: true })
             .click();
+          await page.getByRole('heading',{name:'Gestión de Categorías',exact:true}).waitFor();
+          await page.goto(f.config.publicUrl + '/admin');
           await page
             .getByRole("heading", { name: "Administración", exact: true })
             .waitFor();

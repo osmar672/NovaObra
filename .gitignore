@@ -7,3 +7,9 @@ dist/
 artifacts/
 backups/
 respaldos/
+
+backend/.certs/
+*.key
+*.pem
+*.p12
+*.pfx

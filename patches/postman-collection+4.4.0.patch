@@ -1,0 +1,64 @@
+diff --git a/node_modules/postman-collection/lib/superstring/dynamic-variables.js b/node_modules/postman-collection/lib/superstring/dynamic-variables.js
+--- a/node_modules/postman-collection/lib/superstring/dynamic-variables.js
++++ b/node_modules/postman-collection/lib/superstring/dynamic-variables.js
+@@ -1,4 +1,59 @@
+-var faker = require('@faker-js/faker/locale/en'),
++var modernFaker = require('@faker-js/faker/locale/en').faker,
++    // Preserve the SDK's legacy dynamic-variable API while using patched Faker 10.
++    faker = Object.assign({}, modernFaker, {
++        address: Object.assign({}, modernFaker.location, { streetName: modernFaker.location.street }),
++        name: Object.assign({}, modernFaker.person, { findName: modernFaker.person.fullName }),
++        random: {
++            arrayElement: modernFaker.helpers.arrayElement,
++            word: modernFaker.word.sample,
++            alphaNumeric: modernFaker.string.alphanumeric
++        },
++        datatype: Object.assign({}, modernFaker.datatype, {
++            number: function (options) {
++                return modernFaker.number.int(Object.assign({ min: 0, max: 99999 },
++                    typeof options === 'number' ? { max: options } : options));
++            },
++            uuid: modernFaker.string.uuid
++        }),
++        phone: {
++            phoneNumber: modernFaker.phone.number,
++            phoneNumberFormat: function () { return modernFaker.phone.number({ style: 'national' }); }
++        },
++        company: Object.assign({}, modernFaker.company, {
++            companyName: modernFaker.company.name,
++            companySuffix: function () { return modernFaker.helpers.arrayElement(['Inc', 'LLC', 'Group', 'Corp']); },
++            bs: modernFaker.company.buzzPhrase,
++            bsAdjective: modernFaker.company.buzzAdjective,
++            bsBuzz: modernFaker.company.buzzVerb,
++            bsNoun: modernFaker.company.buzzNoun
++        }),
++        commerce: Object.assign({}, modernFaker.commerce, { color: modernFaker.color.human }),
++        finance: Object.assign({}, modernFaker.finance, {
++            account: modernFaker.finance.accountNumber,
++            mask: function (length) { return modernFaker.string.numeric({ length: length || 4 }); }
++        }),
++        internet: Object.assign({}, modernFaker.internet, {
++            userName: modernFaker.internet.username,
++            color: modernFaker.color.rgb
++        }),
++        image: Object.assign({}, modernFaker.image, {
++            transport: function () { return modernFaker.image.urlLoremFlickr({ category: 'transport' }); },
++            sports: function () { return modernFaker.image.urlLoremFlickr({ category: 'sports' }); },
++            people: function () { return modernFaker.image.urlLoremFlickr({ category: 'people' }); },
++            nightlife: function () { return modernFaker.image.urlLoremFlickr({ category: 'nightlife' }); },
++            nature: function () { return modernFaker.image.urlLoremFlickr({ category: 'nature' }); },
++            food: function () { return modernFaker.image.urlLoremFlickr({ category: 'food' }); },
++            fashion: function () { return modernFaker.image.urlLoremFlickr({ category: 'fashion' }); },
++            city: function () { return modernFaker.image.urlLoremFlickr({ category: 'city' }); },
++            cats: function () { return modernFaker.image.urlLoremFlickr({ category: 'cats' }); },
++            business: function () { return modernFaker.image.urlLoremFlickr({ category: 'business' }); },
++            animals: function () { return modernFaker.image.urlLoremFlickr({ category: 'animals' }); },
++            abstract: function () { return modernFaker.image.urlLoremFlickr({ category: 'abstract' }); },
++            imageUrl: function (width, height) {
++                return modernFaker.image.urlPicsumPhotos({ width: width || 640, height: height || 480 });
++            }
++        })
++    }),
+     uuid = require('uuid'),
+ 
+     // locale list generated from: https://github.com/chromium/chromium/blob/master/ui/base/l10n/l10n_util.cc

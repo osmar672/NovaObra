@@ -1,8 +1,10 @@
+import {request as httpsRequest} from 'node:https';
+import {readFile} from 'node:fs/promises';
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
-import { configuration } from "./backend/config.js";
+import { configuration } from "./backend/src/config.js";
 const cwd = fileURLToPath(new URL(".", import.meta.url));
 const children = new Set();
 let closing = false, keyboard;
@@ -42,11 +44,15 @@ function freePort(host, port) {
     server.listen(port, host, () => server.close(resolve));
   });
 }
+let localCa;
 async function ready(url) {
   for (let attempt = 0; attempt < 60; attempt++) {
     if (closing) throw new Error("Inicio interrumpido.");
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(1000) });
+      const response = localCa?await new Promise((resolve,reject)=>{
+        const req=httpsRequest(url,{ca:localCa,timeout:1000},res=>{let data='';res.on('data',chunk=>data+=chunk);res.on('end',()=>resolve({ok:res.statusCode===200,json:async()=>JSON.parse(data)}));});
+        req.on('error',reject);req.on('timeout',()=>req.destroy(new Error('Timeout')));req.end();
+      }):await fetch(url, { signal: AbortSignal.timeout(1000) });
       if (response.ok && (await response.json()).ok === true) return;
     } catch {}
     await delay(250);
@@ -56,6 +62,15 @@ async function ready(url) {
 for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => { void stop(); });
 try {
   const config = configuration();
+  if(config.tls){
+    await freePort(config.host,config.port);
+    if(config.redirectPort)await freePort(config.host,config.redirectPort);
+    await new Promise((resolve,reject)=>{const build=spawn(process.execPath,['node_modules/vite/bin/vite.js','build','--config','frontend/vite.config.js'],{cwd,stdio:'inherit'});build.once('error',reject);build.once('exit',code=>code===0?resolve():reject(new Error('Falló la compilación.')));});
+    localCa=await readFile(config.tls.cert);
+    launch(['backend/src/server.js']);
+    await ready(config.publicUrl+'/api/health');
+    console.log('NovaObra lista en '+config.publicUrl+'. Ctrl+C para detener.');
+  }else{
   if (config.production) throw new Error("Para producción usa npm run build y npm run serve detrás de HTTPS.");
   if (config.publicUrl !== "http://127.0.0.1:5174")
     throw new Error("El inicio local usa PUBLIC_URL=http://127.0.0.1:5174. Para otro origen usa npm run serve.");
@@ -63,17 +78,18 @@ try {
   if (config.port === 0) throw new Error("El iniciador necesita un PORT fijo entre 1 y 65535.");
   await freePort(config.host, config.port);
   await freePort("127.0.0.1", 5174);
-  launch(["backend/server.js"]);
+  launch(["backend/src/server.js"]);
   await ready(`http://${config.host}:${config.port}/api/health`);
   launch(["node_modules/vite/bin/vite.js", "--config", "frontend/vite.config.js", "--clearScreen", "false"]);
   await ready("http://127.0.0.1:5174/api/health");
+  }
   if (process.stdin.isTTY) {
     keyboard = data => { if (data.toString().includes("\u0003")) { console.log("\nDeteniendo NovaObra..."); void stop(); } };
     process.stdin.setRawMode(true);
     process.stdin.on("data", keyboard);
     process.stdin.resume();
   }
-  console.log("\nNovaObra lista en http://127.0.0.1:5174. Ctrl+C detiene ambos servicios.");
+  if(!config.tls)console.log("\nNovaObra lista en http://127.0.0.1:5174. Ctrl+C detiene ambos servicios.");
 } catch (error) {
   if (!closing) {
     console.error(error.message);

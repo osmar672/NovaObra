@@ -3,11 +3,11 @@ import dotenv from "dotenv";
 import { readFile, writeFile, rename, unlink, open } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { ask } from "./prompt.js";
-import { setup } from "../schema.js";
-const envPath = new URL("../../.env", import.meta.url),
-  lockPath = new URL("../../.env.configure.lock", import.meta.url),
+import { setup } from "../src/schema.js";
+const envPath = new URL("../.env", import.meta.url),
+  lockPath = new URL("../.env.configure.lock", import.meta.url),
   tempPath = new URL(
-    `../../.env.configure-${randomBytes(8).toString("hex")}.tmp`,
+    `../.env.configure-${randomBytes(8).toString("hex")}.tmp`,
     import.meta.url,
   );
 let connection,
@@ -23,7 +23,7 @@ try {
   });
   const values = dotenv.parse(
     original ||
-      (await readFile(new URL("../../.env.example", import.meta.url), "utf8")),
+      (await readFile(new URL("../.env.example", import.meta.url), "utf8")),
   );
   const database = values.DB_NAME || "NovaObraTienda",
     host = values.DB_HOST || "127.0.0.1";
@@ -82,9 +82,9 @@ try {
     DB_NAME: database,
     DB_USER: newUser,
     DB_PASSWORD: appPassword,
-    SESSION_SECRET:
-      values.SESSION_SECRET?.length >= 48
-        ? values.SESSION_SECRET
+    JWT_SECRET:
+      (values.JWT_SECRET || values.SESSION_SECRET)?.length >= 48
+        ? (values.JWT_SECRET || values.SESSION_SECRET)
         : randomBytes(48).toString("hex"),
   };
   const current = await readFile(envPath, "utf8").catch((error) => {
@@ -105,7 +105,7 @@ try {
   await rename(tempPath, envPath);
   success = true;
   console.log(
-    "Tienda preparada: 10 tablas y una cuenta MySQL propia. La clave de root no se guardó.",
+    "Tienda preparada: 11 tablas y una cuenta MySQL propia. La clave de root no se guardó.",
   );
   console.log(
     "Crea tu administrador web con npm run admin:create; luego ejecuta npm start.",

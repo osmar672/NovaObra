@@ -1,0 +1,2 @@
+import {api} from './api.js';
+export default {list:(page=1,signal)=>api('/movimientos_inventario'+('movimientos_inventario'==='productos'?'?pagina='+page:''),{signal}),read:id=>api('/movimientos_inventario/'+id),create:body=>api('/movimientos_inventario',{method:'POST',body}),update:(id,body)=>api('/movimientos_inventario/'+id,{method:'PUT',body}),remove:id=>api('/movimientos_inventario/'+id,{method:'DELETE'})};

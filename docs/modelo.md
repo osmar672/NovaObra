@@ -1,11 +1,12 @@
 # Modelo relacional de la tienda
 
-Base predeterminada `NovaObraTienda`. El esquema está en `database/schema.sql`; el asistente selecciona la base antes de ejecutarlo. No ejecutarlo dentro de una base ajena a esta tienda. MySQL 8.0.16+, InnoDB, claves foráneas activas, UTF-8. No hay tabla adicional de migraciones o sesiones.
+Base predeterminada `NovaObraTienda`. El esquema está en `database/schema.sql`; el asistente selecciona la base antes de ejecutarlo. No ejecutarlo dentro de una base ajena a esta tienda. MySQL 8.0.16+, InnoDB, claves foráneas activas, UTF-8. La tabla técnica adicional sesiones_refresh guarda hashes, familias, expiración, consumo y revocación.
 
 ```mermaid
 erDiagram
   roles ||--o{ usuarios : autoriza
   usuarios ||--o| clientes : perfil
+  usuarios ||--o{ sesiones_refresh : sesiones
   categorias ||--o{ productos : clasifica
   marcas ||--o{ productos : identifica
   productos ||--|| inventario : existencias
@@ -19,6 +20,7 @@ erDiagram
 
 | Tabla | Responsabilidad y restricciones |
 | --- | --- |
+| sesiones_refresh | Hash único SHA-256 de token opaco, familia, versión, vencimiento, consumo y revocación; FK a usuarios |
 | roles | Tres roles: administrador, empleado y cliente; nombre único |
 | usuarios | Nombre, email único, hash scrypt, rol, acceso activo y versión de sesión |
 | clientes | Perfil opcional 1:1 de usuario; teléfono y dirección de contacto |

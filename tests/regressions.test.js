@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { credential } from "../backend/lib/validation.js";
-import { hashPassword, verifyPassword } from "../backend/lib/auth.js";
-import { promotionDate } from "../backend/services/catalog.js";
-import { configuration } from "../backend/config.js";
+import { credential } from "../backend/src/middlewares/validaciones.js";
+import { hashPassword, verifyPassword } from "../backend/src/middlewares/authMiddleware.js";
+import { promotionDate } from "../backend/src/services/catalog.js";
+import { configuration } from "../backend/src/config.js";
 
 test("La autenticación conserva todos los caracteres de la contraseña", async () => {
   const value = "  Una contraseña larga  ";

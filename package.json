@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "dev": "vite --config frontend/vite.config.js",
@@ -13,21 +13,41 @@
     "db:setup": "node backend/scripts/setup.js",
     "admin:create": "node backend/scripts/admin.js",
     "test": "node --test tests/*.test.js",
-    "test:integration": "node --test --test-concurrency=1 tests/integration.js tests/startup.js",
-    "test:ui": "node --test tests/ui.js",
-    "serve": "node backend/server.js",
-    "db:configure": "node backend/scripts/configure.js"
+    "test:integration": "node --test --test-concurrency=1 tests/integration.js tests/day2.js tests/startup.js tests/cookies.js",
+    "test:ui": "node --test --test-concurrency=1 tests/ui.js tests/day2-ui.js",
+    "serve": "node backend/src/server.js",
+    "db:configure": "node backend/scripts/configure.js",
+    "test:postman": "node --test tests/postman.js",
+    "postinstall": "node tests/apply-security-patches.cjs",
+    "audit:deps": "npm audit && npm audit --omit=dev",
+    "https:setup": "node backend/scripts/https.js",
+    "test:https": "node --test tests/https.js"
   },
   "dependencies": {
-    "express": "^5.1.0",
-    "mysql2": "^3.15.0",
     "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.15.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.0"
   },
   "devDependencies": {
-    "vite": "^7.2.0",
-    "playwright-core": "^1.64.1"
+    "newman": "6.2.3",
+    "patch-package": "8.0.1",
+    "playwright-core": "^1.64.1",
+    "vite": "^7.2.0"
+  },
+  "overrides": {
+    "@faker-js/faker": "10.6.0",
+    "csv-parse": "7.0.3",
+    "flatted": "3.4.4",
+    "handlebars": "4.7.10",
+    "jose": "4.15.9",
+    "lodash": "4.18.1",
+    "node-forge": "1.4.3",
+    "qs": "6.17.1",
+    "underscore": "1.13.8",
+    "uuid": "11.1.1"
   }
 }

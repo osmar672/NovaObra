@@ -1329,3 +1329,5 @@ a {
 .header-actions > a:first-child { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
 .main-nav a, .category-grid a, .cart-item > div { min-width: 0; overflow-wrap: anywhere; }
 @media(max-width:760px) { .main-nav .mobile-account { display: block; } }
+
+.gestion-nav{gap:1rem;flex-wrap:wrap;margin-bottom:1rem}.gestion-nav a[aria-current="page"]{font-weight:800;text-decoration:underline}.gestion-form{display:grid;gap:1rem;margin:1rem 0}.gestion-form label{display:grid;gap:.4rem}.table-scroll{overflow-x:auto;margin-top:1rem}.table-scroll td{max-width:25rem;overflow-wrap:anywhere}.gestion-form h2{margin:0}.gestion-form .button-row{flex-wrap:wrap}

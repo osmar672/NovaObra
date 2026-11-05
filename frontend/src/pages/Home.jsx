@@ -2,10 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useData } from "../hooks/useData.js";
 import { Meta, ProductCard, Feedback, Empty } from "../components/UI.jsx";
+import {useAuth} from "../context/AuthContext.jsx";
 export default function Home() {
-  const featured = useData("/productos?destacado=1", { poll: true }),
-    latest = useData("/productos?orden=nuevos", { poll: true }),
-    categories = useData("/categorias");
+  const {user}=useAuth();
+  const featured = useData(user ? "/productos?destacado=1" : null, { poll: true }),
+    latest = useData(user ? "/productos?orden=nuevos" : null, { poll: true }),
+    categories = useData(user ? "/categorias" : null);
   return (
     <>
       <Meta title="Ferretería y construcción" />

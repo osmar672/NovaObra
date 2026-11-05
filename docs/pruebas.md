@@ -1,3 +1,5 @@
+> Evidencia histórica anterior al Día 2. Los contratos y resultados actuales están en [entrega del Día 2](entrega-dia2.md).
+
 # Verificación de la tienda
 
 Verificación de la estructura única ejecutada el 4 de noviembre de 2026 en Linux, con MySQL **8.0.46**, Node.js y Chromium reales. Las pruebas usan bases temporales `novaobra_shop_test_*`, creadas y eliminadas por cada ejecución; no utilizan la base del usuario ni bases anteriores. No se probó físicamente el equipo Windows del usuario.
@@ -40,3 +42,15 @@ Opcionalmente `TEST_DB_HOST` y `TEST_DB_PORT` eligen la instancia MySQL. La prue
 Si falta `NOVAOBRA_TEST_ADMIN_FILE`, integración y navegador se marcan como **omitidos**, no como verificados. En esta entrega ambas suites se ejecutaron con MySQL real y sin omisiones. Las capturas se generan localmente en `artifacts/tienda-escritorio.png` y `artifacts/tienda-movil.png`, excluidas de Git.
 
 No se han probado pagos, reseñas, streaming ni envío de correo automático porque no están implementados. Las limitaciones y los requisitos previos a un despliegue están en el README. El comportamiento del asistente en Windows requiere comprobarse en el equipo destino; el `.bat` está preparado con saltos CRLF.
+
+## Ampliación: renovación y HTTPS
+
+Verificado en Linux con MySQL 8 real, Node y Chromium:
+
+- 10 pruebas unitarias/compatibilidad; 25 de integración con migración conservadora, hashes de refresh, rotación, vencimiento, reutilización concurrente, desactivación, cambio de contraseña y logout.
+- 6 pruebas de navegador para tienda y gestión: restauración sin almacenamiento web, HttpOnly, CRUD y una sola renovación ante varios 401 simultáneos.
+- `npm run test:https`: certificado TLS autofirmado verificado explícitamente por Node, redirección 308, HSTS, cookie Secure/HttpOnly y login/gestión de React bajo HTTPS. Solo el contexto Chromium de esta prueba admite el certificado de prueba; Node no desactiva la validación.
+- Postman/Newman: 93 solicitudes, 94 aserciones.
+- Auditorías completas y de producción: cero vulnerabilidades conocidas al ejecutar npm audit.
+
+Requiere OpenSSL y Chromium para test:https, además del archivo privado de credenciales de pruebas. Windows/macOS y el despliegue público requieren verificación en sus entornos.
