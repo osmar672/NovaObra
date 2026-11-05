@@ -4,6 +4,7 @@ import { useShop } from "../context/ShopContext.jsx";
 import { useData } from "../hooks/useData.js";
 import { api, money } from "../services/api.js";
 import { Feedback, Meta, PageHeading, Empty } from "../components/UI.jsx";
+import {Icon,AuthShell} from '../components/Visuals.jsx';
 export function OrderList({ orders }) {
   return (
     <div className="order-list">
@@ -37,7 +38,7 @@ export function OrderList({ orders }) {
   );
 }
 export default function Account() {
-  const { user, setUser, authReady, logout, authError } = useShop(),
+  const { user, setUser, authReady, logout, authError, cart, favorites } = useShop(),
     [register, setRegister] = useState(false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -80,87 +81,9 @@ export default function Account() {
       setBusy(false);
     }
   }
-  return (
-    <div className="container section">
-      <Meta title="Mi cuenta" />
-      <PageHeading
-        eyebrow="BIENVENIDO A NOVAOBRA"
-        title={
-          user
-            ? `Hola, ${user.nombre}`
-            : register
-              ? "Crea tu cuenta"
-              : "Mi cuenta"
-        }
-      />
-      <Feedback error={error || authError} loading={!authReady} />
-      {authReady &&
-        (user ? (
-          <>
-            <div className="button-row">
-              {user.rol !== "cliente" && (
-                <Link className="button" to="/gestion/categorias">
-                  Administración
-                </Link>
-              )}
-              <button
-                className="secondary"
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    await logout();
-                  } catch (e) {
-                    setError(e.message);
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                Cerrar sesión
-              </button>
-            </div>
-            <h2>Mis pedidos y cotizaciones</h2>
-            <Feedback {...orders} />
-            {orders.data?.length ? (
-              <OrderList orders={orders.data} />
-            ) : (
-              orders.data && (
-                <Empty>
-                  Aún no tienes pedidos.{" "}
-                  <Link to="/catalogo">Visita el catálogo.</Link>
-                </Empty>
-              )
-            )}
-            <details className="panel password-panel">
-              <summary>Cambiar contraseña</summary>
-              <form onSubmit={changePassword}>
-                <label>
-                  Contraseña actual
-                  <input
-                    type="password"
-                    name="actual"
-                    required
-                    autoComplete="current-password"
-                  />
-                </label>
-                <label>
-                  Contraseña nueva
-                  <input
-                    type="password"
-                    name="nueva"
-                    minLength={8}
-                    maxLength={128}
-                    required
-                    autoComplete="new-password"
-                  />
-                </label>
-                <button disabled={busy}>Actualizar contraseña</button>
-              </form>
-            </details>
-          </>
-        ) : (
-          <form className="panel auth-form" onSubmit={submit}>
+  if(!authReady)return <div className="container section"><Feedback loading/></div>;
+  if(!user)return <AuthShell register={register}><Meta title="Mi cuenta"/><Feedback error={error||authError}/>
+          <form className="auth-fields" onSubmit={submit}>
             {register && (
               <label>
                 Nombre completo
@@ -217,7 +140,27 @@ export default function Account() {
               {register ? "Ya tengo una cuenta" : "Crear una cuenta nueva"}
             </button>
           </form>
-        ))}
+  </AuthShell>;
+  const list=orders.data||[],initials=user.nombre.split(' ').filter(Boolean).slice(0,2).map(word=>word[0]).join('').toUpperCase();
+  const count=orders.data?list.filter(order=>order.tipo==='pedido').length:'—',quotes=orders.data?list.filter(o=>o.tipo==='cotizacion').length:'—';
+  const pending=orders.data?list.filter(o=>!['entregado','cancelado'].includes(o.estado)&&!(o.tipo==='cotizacion'&&o.estado==='confirmado')).length:null;
+  return <div className="container section account-page"><Meta title="Mi cuenta"/>
+    <div className="account-layout">
+      <aside className="account-sidebar">
+        <div className="account-profile"><span className="account-avatar">{initials}</span><strong>{user.nombre}</strong><span>{user.correo||user.email}</span><small><Icon name="shield" size={13}/>{user.rol==='cliente'?'Cuenta de cliente':user.rol}</small></div>
+        <nav aria-label="Mi cuenta"><a href="#account-overview"><Icon name="grid" size={19}/>Resumen de mi cuenta</a><a href="#account-orders"><Icon name="box" size={19}/>Pedidos y cotizaciones</a><Link to="/favoritos"><Icon name="list" size={19}/>Mis favoritos <b>{favorites.length}</b></Link><Link to="/carrito"><Icon name="box" size={19}/>Mi carrito <b>{cart.reduce((sum,item)=>sum+item.cantidad,0)}</b></Link><a href="#account-security"><Icon name="shield" size={19}/>Seguridad</a>{user.rol!=='cliente'&&<Link to="/admin"><Icon name="grid" size={19}/>Administración</Link>}</nav>
+        <button className="account-logout secondary" disabled={busy} onClick={async()=>{setBusy(true);try{await logout();}catch(e){setError(e.message);}finally{setBusy(false);}}}>Cerrar sesión <Icon name="arrow" size={17}/></button>
+      </aside>
+      <div className="account-main">
+        <header id="account-overview" className="account-welcome"><div><span className="eyebrow">TU ESPACIO NOVAOBRA</span><h1>Hola, {user.nombre}</h1><p>Organiza tus compras, guarda tus ideas y prepara tu próximo proyecto.</p></div><Link className="button" to="/catalogo">Explorar catálogo <Icon name="arrow" size={18}/></Link></header>
+        <Feedback error={error||authError}/>
+        <div className="account-stats">{[['Pedidos',count,'box'],['Cotizaciones',quotes,'list'],['Favoritos',favorites.length,'list'],['En el carrito',cart.reduce((sum,item)=>sum+item.cantidad,0),'box']].map(([label,value,icon])=><div key={label}><span className="account-stat-icon"><Icon name={icon}/></span><strong>{value}</strong><span>{label}</span></div>)}</div>
+        <section className="account-orders" id="account-orders"><div className="account-section-title"><div><span className="eyebrow">EL AVANCE DE TUS PROYECTOS</span><h2>Mis pedidos y cotizaciones</h2></div>{pending!==null&&<span className="account-pending">{pending} en curso</span>}</div><Feedback {...orders}/>
+        {list.length?<OrderList orders={list}/>:orders.data&&<div className="account-empty"><div className="account-empty-icon"><Icon name="box" size={40}/></div><div><h3>Todo listo para tu primer proyecto</h3><p>Aún no tienes pedidos. Explora herramientas y materiales, prepara tu carrito y elige entre un pedido o una cotización.</p><Link className="button" to="/catalogo">Visita el catálogo <Icon name="arrow" size={17}/></Link></div></div>}
+        </section>
+        <section className="account-shortcuts"><Link to="/catalogo"><Icon name="tool"/><div><h3>Encuentra lo que necesitas</h3><p>Consulta precios, descripciones y existencias.</p></div><Icon name="arrow" size={17}/></Link><Link to="/contacto"><Icon name="user"/><div><h3>Prepara tu consulta</h3><p>Encuentra los canales de contacto de la tienda.</p></div><Icon name="arrow" size={17}/></Link></section>
+        <details id="account-security" className="panel password-panel"><summary><Icon name="shield" size={20}/>Cambiar contraseña</summary><p className="muted">Al actualizarla se cerrarán las sesiones actuales. Después podrás entrar con tu nueva contraseña.</p><form onSubmit={changePassword}><div className="two-columns"><label>Contraseña actual<input type="password" name="actual" required autoComplete="current-password"/></label><label>Contraseña nueva<input type="password" name="nueva" minLength={8} maxLength={128} required autoComplete="new-password"/></label></div><button disabled={busy}>Actualizar contraseña</button></form></details>
+      </div>
     </div>
-  );
+  </div>;
 }

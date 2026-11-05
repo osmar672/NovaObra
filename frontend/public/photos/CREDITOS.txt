@@ -73,3 +73,30 @@ https://github.com/ShaznaSalman/Hardware-Store-website/blob/master/images/card/P
 bulb.webp (fotografía de referencia de lámpara LED)
 https://github.com/Ferreteria-San-Francisco/ferreteria-san-francisco-web/blob/main/src/assets/images/products/Focos%20Led/Foco%20Led%20de%205%20a%2015.png
 Los titulares conservan los derechos de estas fotografías y marcas.
+
+FOTOGRAFÍAS ADICIONALES DEL CATÁLOGO AMPLIADO
+
+sander.avif
+Autor: subvertivo _lab
+Original: https://unsplash.com/photos/G6yracEEm8A
+Licencia Unsplash.
+
+goggles.avif
+Autor: wilson montoya
+Original: https://unsplash.com/photos/black-framed-sunglasses-with-yellow-lens-Cf_d_nDtOcM
+Licencia Unsplash.
+
+fasteners.avif
+Autor: Eliza Diamond
+Original: https://unsplash.com/photos/gray-screw-bolt-lot-pvm5QvjFrJ8
+Licencia Unsplash.
+
+toolbelt.avif
+Autor: jesse orrico
+Original: https://unsplash.com/photos/brown-handled-hammer-and-with-tool-belt-L94dWXNKwrY
+Licencia Unsplash.
+
+cabinet.avif
+Autor: Georg Eiermann
+Original: https://unsplash.com/photos/a-group-of-wooden-objects-uXWbowHdJqk
+Licencia Unsplash.

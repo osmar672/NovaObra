@@ -67,6 +67,7 @@ export function ProductCard({ product: p }) {
           <ProductImage product={p} />
         </Link>
         {offer && <span className="badge">Oferta</span>}
+        {p.sku?.startsWith("NV-DEMO-")&&<span className="demo-label">Demostración</span>}
         <button
           className="favorite"
           aria-label={`${favorites.includes(p.id) ? "Quitar de" : "Guardar en"} favoritos: ${p.nombre}`}

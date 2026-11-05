@@ -52,6 +52,22 @@ npm run db:setup -- --demo
 
 No ejecutar la semilla sobre registros existentes. El preparador no sustituye migraciones de esquemas ajenos.
 
+### Añadir 48 productos de demostración a una tienda existente
+
+Con la conexión y el administrador web ya configurados, ejecuta una sola vez:
+
+```sh
+npm run catalog:demo
+npm start
+```
+
+Añade 48 productos en ocho departamentos, con descripciones, precios en CRC, inventario de ejemplo y fotografías reales de referencia. Se identifican con SKU `NV-DEMO-*`, marca **Catálogo de demostración** y una etiqueta visible. Son datos ficticios para probar la tienda, no ofertas ni existencias comerciales reales.
+
+El comando no borra ni reemplaza tus productos y puede repetirse: conserva los registros existentes y las ediciones posteriores de precios, nombres y stock. La carga es transaccional y registra un movimiento de inventario por producto, usando como responsable al primer administrador web activo. Si no existe uno, ejecuta `npm run admin:create`. No crea usuarios, pedidos ni tablas nuevas.
+
+El menú Departamentos permite consultar todas las categorías; el inicio muestra seis accesos compactos, hasta ocho destacados y ocho productos recientes. La cuenta incluye pedidos, cotizaciones, favoritos, carrito y seguridad. El mapa se carga con **Cargar mapa interactivo** y requiere Internet; San José sigue siendo una ubicación de demostración.
+
+
 ## Autenticación
 
 - `POST /api/auth/register`: `{ nombre, correo, password }`, contraseña de 8 a 128 caracteres. Devuelve 201 con el usuario sin hash; correo duplicado devuelve 400.

@@ -8,6 +8,7 @@ import {
   Feedback,
   Empty,
 } from "../components/UI.jsx";
+import {Icon} from '../components/Visuals.jsx';
 export default function Catalog({ offers = false }) {
   const [params, setParams] = useSearchParams(),
     query = new URLSearchParams(params);
@@ -135,6 +136,7 @@ export default function Catalog({ offers = false }) {
             </label>
           </div>
           <Feedback {...products} />
+          {products.data?.items.some(p=>p.sku?.startsWith("NV-DEMO-"))&&<div className="catalog-demo-notice"><Icon name="box" size={19}/><span>Los artículos marcados como demostración tienen precios y existencias de ejemplo para probar la tienda.</span></div>}
           <div className="product-grid catalog-products">
             {products.data?.items.map((p) => (
               <ProductCard key={p.id} product={p} />
