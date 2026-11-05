@@ -5,6 +5,7 @@ import { useData } from "../hooks/useData.js";
 import { api, money } from "../services/api.js";
 import { Feedback, Meta, PageHeading, Empty } from "../components/UI.jsx";
 import { OrderList } from "./Account.jsx";
+import {AccessRestricted,Icon} from '../components/Visuals.jsx';
 function useMutation(reload) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -704,14 +705,7 @@ export default function Admin() {
     [tab, setTab] = useState("dashboard");
   if (!authReady) return <Feedback loading />;
   if (!user) return <Navigate to="/cuenta" replace />;
-  if (user.rol === "cliente")
-    return (
-      <div className="container section">
-        <h1>Acceso restringido</h1>
-        <p>Esta página requiere permisos de empleado o administrador.</p>
-        <Link to="/">Volver a la tienda</Link>
-      </div>
-    );
+  if (user.rol === "cliente")return <AccessRestricted/>;
   const tabs = [
     ["dashboard", "Resumen"],
     ["productos", "Productos"],
@@ -723,13 +717,13 @@ export default function Admin() {
     ...(user.rol === "administrador" ? [["usuarios", "Usuarios"]] : []),
   ];
   return (
-    <div className="container section">
+    <div className="container section admin-page">
       <Meta title="Administración" />
       <PageHeading
         eyebrow={`PANEL PRIVADO · ${user.rol}`}
         title="Administración"
       />
-      <nav className="admin-tabs" aria-label="Administración">
+      <div className="admin-workspace"><aside className="admin-sidebar"><div className="sidebar-heading"><Icon name="grid"/><span>Centro de operaciones<small>Todo en un solo lugar</small></span></div><nav className="admin-tabs" aria-label="Administración">
         {tabs.map(([key, label]) => (
           <button
             key={key}
@@ -737,11 +731,11 @@ export default function Admin() {
             aria-current={tab === key ? "page" : undefined}
             onClick={() => setTab(key)}
           >
-            {label}
+            <Icon name={key==="dashboard"?"grid":key==="inventario"?"box":key==="clientes"||key==="usuarios"?"user":"list"} size={18}/>{label}
           </button>
         ))}
-      </nav>
-      <div key={tab}>
+      </nav><div className="sidebar-note"><Icon name="shield"/><p>Una buena obra empieza con una buena organización.</p></div><Link className="sidebar-store" to="/catalogo">Volver a la tienda <Icon name="arrow" size={16}/></Link></aside>
+      <div className="admin-main" key={tab}><div className="admin-section-heading"><div><span className="eyebrow">VISTA DE TRABAJO</span><h2>{tabs.find(([key])=>key===tab)?.[1]}</h2></div><span className="admin-role"><Icon name="shield" size={16}/>{user.rol}</span></div>
         {tab === "dashboard" ? (
           <Dashboard />
         ) : tab === "productos" ? (
@@ -755,7 +749,7 @@ export default function Admin() {
         ) : (
           <People users={tab === "usuarios"} />
         )}
-      </div>
+      </div></div>
     </div>
   );
 }

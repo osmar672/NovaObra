@@ -3,22 +3,26 @@ import { Link } from "react-router-dom";
 import { useData } from "../hooks/useData.js";
 import { Meta, ProductCard, Feedback, Empty } from "../components/UI.jsx";
 import {useAuth} from "../context/AuthContext.jsx";
+import {Icon,LocationMap} from '../components/Visuals.jsx';
+import {productVisual} from '../services/presentation.js';
 export default function Home() {
   const {user}=useAuth();
   const featured = useData(user ? "/productos?destacado=1" : null, { poll: true }),
     latest = useData(user ? "/productos?orden=nuevos" : null, { poll: true }),
     categories = useData(user ? "/categorias" : null);
+  const inspiration=[{nombre:'Herramientas',descripcion:'Equipa tus ideas.',visual:'tools'},{nombre:'Construcción',descripcion:'Las bases de tu proyecto.',visual:'materials'},{nombre:'Pinturas',descripcion:'Renueva cada espacio.',visual:'paint'},{nombre:'Electricidad',descripcion:'Conecta tus proyectos.',visual:'electric'},{nombre:'Plomería',descripcion:'Cada conexión cuenta.',visual:'plumbing'},{nombre:'Seguridad',descripcion:'Trabaja con protección.',visual:'safety'}];
+  const displayedCategories=categories.data?.length?categories.data:inspiration;
   return (
     <>
       <Meta title="Ferretería y construcción" />
       <section className="hero">
         <div className="container hero-grid">
           <div>
-            <span className="eyebrow">MANOS A LA OBRA</span>
+            <span className="eyebrow">FERRETERÍA & CONSTRUCCIÓN · COSTA RICA</span>
             <h1>
-              Grandes proyectos.
+              Tu próxima gran obra
               <br />
-              <em>Buenas herramientas.</em>
+              <em>empieza aquí.</em>
             </h1>
             <p>
               Encuentra los materiales y herramientas para darle forma a tus
@@ -38,59 +42,20 @@ export default function Home() {
               <span>03 / Crea</span>
             </div>
           </div>
-          <div className="hero-art" aria-hidden="true">
-            <div className="grid-drawing" />
-            <div className="art-circle" />
-            <svg viewBox="0 0 460 380">
-              <g transform="rotate(-25 220 200)">
-                <path
-                  d="M115 125h175l50 30v65H115z"
-                  fill="#f6c500"
-                  stroke="#24272a"
-                  strokeWidth="5"
-                />
-                <path d="M290 135h45v70h-45z" fill="#303438" />
-                <path d="M335 151h42v37h-42z" fill="#878b8e" />
-                <path d="M377 164h55" stroke="#25292d" strokeWidth="14" />
-                <path d="m180 220 16 99h67l-18-99" fill="#292d30" />
-                <path
-                  d="M188 310h89v33h-89z"
-                  fill="#f6c500"
-                  stroke="#292d30"
-                  strokeWidth="5"
-                />
-                <path
-                  d="M128 144h90M128 159h75M128 174h90"
-                  stroke="#b79400"
-                  strokeWidth="5"
-                />
-                <path
-                  d="M258 225h24v40h-21"
-                  fill="none"
-                  stroke="#222"
-                  strokeWidth="9"
-                />
-              </g>
-            </svg>
-            <span className="art-label">
-              EQUÍPATE PARA
-              <br />
-              <strong>HACERLO POSIBLE.</strong>
-            </span>
-          </div>
+          <div className="hero-visual"><img src="/images/workshop.svg" alt="Taller ilustrado con taladro, casco y materiales de construcción" fetchPriority="high" width="960" height="920"/><div className="hero-image-caption"><span className="caption-icon"><Icon name="tool"/></span><div><strong>De la idea a la obra.</strong><span>Encuentra con qué hacerlo posible.</span></div><span className="caption-number">01 —</span></div><span className="hero-vertical-label">NOVAOBRA / HECHO PARA CONSTRUIR</span></div>
         </div>
       </section>
       <div className="value-strip container">
         <div>
-          <b>Disponibilidad real</b>
+          <Icon name="box"/><b>Disponibilidad real</b>
           <span>Existencias consultadas en la tienda</span>
         </div>
         <div>
-          <b>Compra a tu ritmo</b>
+          <Icon name="list"/><b>Compra a tu ritmo</b>
           <span>Guarda favoritos y prepara tu carrito</span>
         </div>
         <div>
-          <b>Retiro en tienda</b>
+          <Icon name="pin"/><b>Retiro en tienda</b>
           <span>Consulta el estado de tu pedido</span>
         </div>
       </div>
@@ -104,9 +69,9 @@ export default function Home() {
         </div>
         <Feedback {...categories} />
         <div className="category-grid">
-          {categories.data?.map((c, i) => (
-            <Link to={`/catalogo?categoria=${c.id}`} key={c.id}>
-              <span className="category-number">0{i + 1}</span>
+          {displayedCategories.map((c, i) => (
+            <Link to={c.id?`/catalogo?categoria=${c.id}`:'/catalogo'} key={c.id||c.nombre}>
+              <img src={`/images/${c.visual||productVisual({nombre:c.nombre})}.svg`} alt="" loading="lazy" width="640" height="480"/><span className="category-number">0{i + 1}</span>
               <h3>{c.nombre}</h3>
               <p>{c.descripcion}</p>
               <span aria-hidden="true">→</span>
@@ -124,6 +89,7 @@ export default function Home() {
             <Link to="/catalogo">Ver todos →</Link>
           </div>
           <Feedback {...featured} />
+          {!user&&<div className="catalog-invitation"><img src="/images/tools.svg" alt="Ilustración de herramientas para tu proyecto" loading="lazy"/><div><span className="eyebrow">PREPARA TU PRÓXIMO PROYECTO</span><h3>Las herramientas correctas.<br/>Las posibilidades que imaginas.</h3><p>Inicia sesión para explorar productos, consultar precios y disponibilidad, y guardar tu lista de materiales.</p><Link className="button" to="/login">Entrar al catálogo <Icon name="arrow"/></Link></div></div>}
           <div className="product-grid">
             {featured.data?.items.slice(0, 4).map((p) => (
               <ProductCard key={p.id} product={p} />
@@ -152,7 +118,7 @@ export default function Home() {
           </Link>
         </div>
       </section>
-      <section className="container section">
+      {user&&<section className="container section">
         <div className="section-heading">
           <div>
             <span className="eyebrow">EXPLORA EL CATÁLOGO</span>
@@ -165,7 +131,8 @@ export default function Home() {
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
-      </section>
+      </section>}
+      <div className="container section"><LocationMap/></div>
     </>
   );
 }

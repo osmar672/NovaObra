@@ -10,12 +10,14 @@ import {
   Empty,
   ProductCard,
 } from "../components/UI.jsx";
+import {LocationMap} from '../components/Visuals.jsx';
 export function About() {
   const state = useData("/config");
   return (
     <div className="container section narrow">
       <Meta title="Nosotros" />
       <PageHeading eyebrow="NOVAOBRA" title="Un lugar para tus proyectos" />
+      <img className="about-cover" src="/images/workshop.svg" alt="Ilustración de un taller preparado para construir"/>
       <Feedback {...state} />
       <p className="lead prewrap">
         {state.data?.about ||
@@ -49,7 +51,7 @@ export function Contact() {
   return (
     <div className="container section">
       <Meta title="Contacto" />
-      <PageHeading eyebrow="CONVERSEMOS" title="Estamos para ayudarte" />
+      <PageHeading eyebrow="CONVERSEMOS" title="Estamos para ayudarte"><p>Cuéntanos qué quieres construir. El siguiente paso empieza con una buena conversación.</p></PageHeading>
       <Feedback {...state} />
       <div className="contact-grid">
         <div className="panel">
@@ -111,6 +113,7 @@ export function Contact() {
           </form>
         )}
       </div>
+      <LocationMap/>
     </div>
   );
 }

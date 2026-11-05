@@ -28,6 +28,7 @@ import Cart from "./pages/Cart.jsx";
 import Account from "./pages/Account.jsx";
 import { About, Contact, Guides, Favorites } from "./pages/Information.jsx";
 import "./styles.css";
+import "./professional.css";
 const Admin = lazy(() => import("./pages/Admin.jsx"));
 function Scroll() {
   const { pathname } = useLocation();

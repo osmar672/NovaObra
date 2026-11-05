@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext.jsx";
 import { useData } from "../hooks/useData.js";
+import {Icon} from './Visuals.jsx';
 export default function Layout() {
   const { user, cart, notice } = useShop(),
     [open, setOpen] = useState(false),
@@ -86,10 +87,10 @@ export default function Layout() {
           </form>
           <div className="header-actions">
             <Link to="/cuenta">
-              {user ? user.nombre.split(" ")[0] : "Mi cuenta"}
+              <Icon name="user" size={18}/>{user ? user.nombre.split(" ")[0] : "Mi cuenta"}
             </Link>
             <Link to="/carrito" className="cart-link">
-              Carrito <b>{cart.reduce((sum, x) => sum + x.cantidad, 0)}</b>
+              <Icon name="box" size={18}/> Carrito <b>{cart.reduce((sum, x) => sum + x.cantidad, 0)}</b>
             </Link>
             <button
               className="menu-toggle"
@@ -120,6 +121,7 @@ export default function Layout() {
             <NavLink to="/ofertas">Ofertas</NavLink>
             <NavLink to="/nosotros">Nosotros</NavLink>
             <NavLink to="/contacto">Contacto</NavLink>
+            {user&&user.rol!=="cliente"&&<NavLink className="nav-admin" to="/admin"><Icon name="grid" size={15}/> Panel de administración</NavLink>}
             <NavLink className="mobile-account" to="/cuenta">Mi cuenta</NavLink>
           </div>
         </nav>
@@ -156,7 +158,7 @@ export default function Layout() {
             <strong>NovaObra</strong>
             <Link to="/nosotros">Sobre la ferretería</Link>
             {user && user.rol !== "cliente" && (
-              <Link to="/gestion/categorias">Administración</Link>
+              <Link to="/admin">Administración</Link>
             )}
             <p>
               Retiro en tienda.

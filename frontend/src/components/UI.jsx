@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { money, productPath } from "../services/api.js";
 import { useShop } from "../context/ShopContext.jsx";
+import {productVisual,productDescription} from '../services/presentation.js';
 export function Meta({
   title,
   description = "Herramientas, materiales y accesorios para construir tu próximo proyecto. Precios y disponibilidad de NovaObra.",
@@ -48,17 +49,9 @@ export function ProductImage({ product }) {
       referrerPolicy="no-referrer"
     />
   ) : (
-    <div className="image-placeholder">
-      <svg viewBox="0 0 80 80" aria-hidden="true">
-        <path
-          d="M49 12a21 21 0 0 0-25 25L10 51a10 10 0 0 0 14 14l14-14a21 21 0 0 0 25-25L50 39 39 28z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="4"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <span>Imagen no disponible</span>
+    <div className="product-illustration">
+      <img src={`/images/${productVisual(product)}.svg`} alt={`Ilustración de referencia para ${product.categoria||'herramientas'}`} loading="lazy" decoding="async" width="640" height="480"/>
+      <span>Imagen ilustrativa</span>
     </div>
   );
 }
@@ -88,7 +81,8 @@ export function ProductCard({ product: p }) {
         <h3>
           <Link to={productPath(p)}>{p.nombre}</Link>
         </h3>
-        <p className="stock">
+        <p className="product-description">{productDescription(p)}</p>
+        <p className={`stock ${p.existencia>0?"in-stock":"out-of-stock"}`}>
           {p.existencia > 0 ? `${p.existencia} disponibles` : "Agotado"}
         </p>
         <div className="price">
