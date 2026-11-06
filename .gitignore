@@ -13,3 +13,4 @@ backend/.certs/
 *.pem
 *.p12
 *.pfx
+client_secret*.json

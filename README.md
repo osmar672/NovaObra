@@ -76,6 +76,8 @@ La integración usa OAuth 2.0 con código de autorización, PKCE, state y nonce,
 
 **Debes crear tu propio cliente OAuth web en Google Cloud para activarla.** No basta con un botón ni con una API key. Sigue [la guía de Google](docs/google-login.md) y ejecuta `npm run google:configure` desde la raíz. El asistente guarda ID y secreto únicamente en `backend/.env`; reinicia la aplicación. Sin credenciales válidas, el acceso por contraseña sigue disponible y se indica que Google no está habilitado.
 
+Si el acceso sigue rechazando las credenciales, usa `npm run google:import` para importar el JSON del cliente web activo y `npm run google:check` para comprobar el ID efectivo y posibles variables duplicadas o reemplazadas por la terminal. La guía explica cómo descargarlo; nunca compartas el JSON ni el secreto.
+
 Una cuenta nueva de Google recibe rol cliente. Si su correo ya existe, inicia sesión por contraseña y vincúlala desde Cuenta confirmando esa contraseña. No se unen cuentas automáticamente por correo. Google administra la contraseña de las cuentas creadas exclusivamente con Google.
 
 ## Autenticación
