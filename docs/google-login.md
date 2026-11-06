@@ -74,3 +74,44 @@ El login muestra ahora el tipo de fallo. La terminal donde ejecutas npm start im
 | provider_unavailable | Google devolvió un límite o error temporal; espera y vuelve a iniciar el acceso. |
 
 Estas categorías permiten distinguir el fallo, pero no certifican su causa exacta en una computadora ajena. La integración conserva todos los controles de firma, audiencia, emisor, nonce y estado.
+
+## Importar el JSON para evitar mezclar clientes
+
+Si Google muestra `deleted_client`, el ID usado corresponde a un cliente eliminado. Si devuelve credenciales rechazadas, comprueba que el ID y el secreto pertenezcan al mismo cliente web activo. El nombre NovaObra y el ID de proyecto no sustituyen al ID OAuth.
+
+1. En Google Auth Platform → Clientes, abre el cliente web activo que vas a usar.
+2. Comprueba la URI autorizada: `http://127.0.0.1:5174/api/auth/google/callback` para el desarrollo local predeterminado.
+3. Descarga su JSON con las credenciales. Guárdalo en Descargas, fuera del repositorio. Si el secreto anterior ya no está disponible, genera uno nuevo y guarda las credenciales cuando Google las muestre. No compartas el JSON por chat.
+4. Detén NovaObra con Ctrl+C, actualiza el código y ejecuta:
+
+```powershell
+git pull --ff-only origin main
+npm ci
+npm run google:import
+```
+
+El asistente pide la ruta del JSON. En el Explorador de archivos de Windows, haz clic derecho sobre el archivo y elige **Copiar como ruta**; pega esa ruta en la terminal y pulsa Enter. Acepta rutas entre comillas y con espacios. También puedes pasarla como argumento:
+
+```powershell
+npm run google:import -- "C:\Users\TuUsuario\Downloads\client_secret_descargado.json"
+```
+
+El importador acepta únicamente el JSON de un cliente de Aplicación web con ID, secreto y redirección exacta. Guarda la pareja junta en backend/.env y elimina asignaciones Google duplicadas; conserva el resto de la configuración. No cambia el cliente en Google Cloud ni determina si está activo: el intento de acceso confirma su aceptación.
+
+Comprueba y reinicia:
+
+```powershell
+npm run google:check
+npm start
+```
+
+El diagnóstico imprime el ID público efectivo, redirección, presencia del secreto y nombres de variables duplicadas o reemplazadas por la terminal. Nunca muestra el secreto. Si la terminal tiene variables Google distintas, la importación se detiene sin cambiar .env: elimina esas variables de su configuración de origen. En PowerShell, para quitarlas solo de la terminal actual:
+
+```powershell
+Remove-Item Env:GOOGLE_CLIENT_ID -ErrorAction SilentlyContinue
+Remove-Item Env:GOOGLE_CLIENT_SECRET -ErrorAction SilentlyContinue
+```
+
+Repite la importación y reinicia. Si proceden de variables persistentes de Windows, actualízalas o elimínalas desde su configuración para que una terminal nueva no vuelva a cargarlas. Mantén los secretos fuera de Git. Se ignoran los nombres de descarga habituales `client_secret*.json`, pero un archivo renombrado también debe guardarse fuera del repositorio.
+
+Se corrigió el asistente manual: antes solo sustituía la primera asignación Google y dotenv podía terminar usando una repetida más abajo. Los asistentes ahora sustituyen todas las asignaciones de estas dos variables. Esto resuelve ese caso local; no demuestra que fuera la causa en la computadora del usuario.
